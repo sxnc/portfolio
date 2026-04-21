@@ -1,0 +1,722 @@
+/* =================================================================
+   Victor Künzig — timeline one-pager
+   Cream + film-grain base · moss-green accent · no menu, no cursor.
+   Everything hangs off a single central line.
+================================================================== */
+
+:root {
+  /* Anthropic-ish warm palette */
+  --cream:       #f3ede0;
+  --cream-soft:  #ebe4d3;
+  --paper:       #faf6ec;
+
+  --ink:         #161615;
+  --ink-soft:    #2b2a27;
+  --ink-body:    #3a3833;
+  --ink-muted:   #8a8277;
+
+  --moss:        #3a6b4a;
+  --moss-deep:   #2b5339;
+  --moss-soft:   #bfd1c2;
+
+  --line:        rgba(22, 22, 21, 0.14);
+  --line-strong: rgba(22, 22, 21, 0.3);
+
+  --f-sans:  "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --f-serif: "Fraunces", "Times New Roman", serif;
+
+  --pad-x: clamp(20px, 4vw, 40px);
+  --ease:  cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+  background: var(--cream);
+}
+
+body {
+  font-family: var(--f-sans);
+  font-weight: 400;
+  color: var(--ink-body);
+  background: var(--cream);
+  line-height: 1.5;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+img, svg { display: block; max-width: 100%; }
+a { color: inherit; text-decoration: none; }
+em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
+
+::selection { background: var(--moss); color: var(--paper); }
+
+/* ============ PAGE-WIDE TEXTURE ============ */
+
+/* SVG noise filter rendered to data URI — static full-page grain */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0.18;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.09 0 0 0 0 0.09 0 0 0 0 0.08 0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+}
+
+/* ============ INTRO ============ */
+
+.intro {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(72px, 12vh, 140px) var(--pad-x) clamp(80px, 14vh, 180px);
+  text-align: center;
+}
+
+.intro-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 48px;
+  font-weight: 500;
+}
+
+.pulse {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--moss);
+  box-shadow: 0 0 0 0 var(--moss);
+  animation: pulse 2.4s ease-out infinite;
+}
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(58, 107, 74, 0.55); }
+  70%  { box-shadow: 0 0 0 16px rgba(58, 107, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(58, 107, 74, 0); }
+}
+
+.intro-title {
+  font-family: var(--f-serif);
+  font-weight: 300;
+  font-size: clamp(68px, 14vw, 220px);
+  line-height: 0.86;
+  letter-spacing: -0.045em;
+  color: var(--ink);
+  margin-bottom: 56px;
+}
+.intro-title .line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+}
+.intro-title .word {
+  display: inline-block;
+  transform: translateY(110%);
+  animation: riseIn 1.2s var(--ease) forwards;
+}
+.intro-title .word-italic {
+  animation-delay: 0.15s;
+  color: var(--moss);
+  font-style: italic;
+  font-weight: 400;
+}
+@keyframes riseIn { to { transform: translateY(0); } }
+
+.intro-lede {
+  max-width: 640px;
+  margin: 0 auto 64px;
+  font-size: clamp(17px, 1.6vw, 21px);
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+.intro-lede em { color: var(--moss-deep); font-weight: 500; }
+
+.intro-scroll {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+.intro-scroll svg { animation: bob 2.4s ease-in-out infinite; color: var(--moss); }
+@keyframes bob {
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(6px); }
+}
+
+/* ============ TIMELINE ============ */
+
+.timeline {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px var(--pad-x) 120px;
+}
+
+/* The central spine — a single thin ink line. */
+.timeline-line {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--line);
+  transform: translateX(-50%);
+}
+
+/* A coloured segment of the line above the orb —
+   the part of life already "traced" by the viewport. */
+.timeline-travel {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: var(--travel, 0px);
+  background: linear-gradient(to bottom, transparent, var(--moss) 40%, var(--moss));
+  transform: translateX(-50%);
+  will-change: height;
+  pointer-events: none;
+}
+
+/* ============ EVENTS ============ */
+
+.event {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 120px 1fr;
+  gap: 0;
+  align-items: start;
+  margin: clamp(64px, 10vh, 120px) 0;
+  transform: translate3d(0, var(--py, 0px), 0);
+  will-change: transform;
+}
+
+/* minor spacing is tighter */
+.event-minor { margin: clamp(40px, 6vh, 80px) 0; }
+.event-now   { margin: 0 0 clamp(80px, 14vh, 160px); }
+
+/* Small punctuation dot on the line — the protagonist
+   is the fixed orb; these are just quiet ticks. */
+.event-mark {
+  grid-column: 2;
+  justify-self: center;
+  width: 11px; height: 11px;
+  background: var(--ink);
+  border: 3px solid var(--cream);
+  border-radius: 50%;
+  position: relative;
+  z-index: 2;
+  margin-top: 4px;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.event-minor .event-mark {
+  width: 7px; height: 7px;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  box-shadow: 0 0 0 3px var(--cream);
+}
+
+/* Year label — hanging below the marker, always centered on the line */
+.event-year {
+  grid-column: 2;
+  justify-self: center;
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-top: 10px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.event-major .event-year { color: var(--moss-deep); font-weight: 500; font-style: normal; font-family: var(--f-sans); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; }
+
+/* Cards — branch left or right */
+.event-card {
+  grid-row: 1 / span 2;
+  padding: 4px 0;
+}
+.event-left .event-card  { grid-column: 1; text-align: right; padding-right: clamp(20px, 4vw, 56px); }
+.event-right .event-card { grid-column: 3; text-align: left;  padding-left:  clamp(20px, 4vw, 56px); }
+.event-center .event-card {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  text-align: center;
+  margin-top: 24px;
+}
+.event-center .event-year { grid-row: 2; }
+
+/* Reveal */
+.event {
+  opacity: 0;
+  transition: opacity 900ms var(--ease), transform 900ms var(--ease);
+}
+.event.in { opacity: 1; }
+
+/* Card content */
+.event-kicker {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--moss-deep);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.event-title {
+  font-family: var(--f-serif);
+  font-weight: 400;
+  font-size: clamp(24px, 2.6vw, 38px);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.event-where {
+  font-size: 14px;
+  color: var(--moss);
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+.event-where a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.event-where a:hover { color: var(--moss-deep); }
+
+.event-desc {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--ink-body);
+  margin-bottom: 18px;
+  max-width: 42ch;
+}
+.event-left .event-desc { margin-left: auto; }
+.event-right .event-desc { margin-right: auto; }
+
+.event-brief {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 36ch;
+}
+.event-brief strong { color: var(--ink); font-weight: 600; }
+.event-left .event-brief { margin-left: auto; }
+.event-right .event-brief { margin-right: auto; }
+
+/* Inline stat inside a card — featured number */
+.event-stat {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 18px;
+  padding: 14px 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+}
+.event-left .event-stat  { align-items: flex-end; }
+.event-right .event-stat { align-items: flex-start; }
+.event-stat-num {
+  font-family: var(--f-serif);
+  font-weight: 400;
+  font-size: clamp(32px, 3.2vw, 44px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--moss-deep);
+  font-variant-numeric: tabular-nums;
+}
+.event-stat-cap {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Tags */
+.event-tags {
+  list-style: none;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 42ch;
+}
+.event-left .event-tags  { justify-content: flex-end; }
+.event-right .event-tags { justify-content: flex-start; }
+.event-tags li {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  background: rgba(250, 246, 236, 0.5);
+}
+
+/* "Today" marker — a pulsing moss dot (subtle; orb does the heavy lifting) */
+.event-mark-now {
+  width: 14px !important;
+  height: 14px !important;
+  background: var(--moss) !important;
+  border: 3px solid var(--cream) !important;
+  box-shadow: 0 0 0 1px var(--moss),
+              0 0 0 6px rgba(58, 107, 74, 0.15) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.mark-pulse {
+  position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--moss);
+  animation: pulse 2s ease-out infinite;
+}
+.event-now .event-year {
+  font-family: var(--f-serif) !important;
+  font-style: italic !important;
+  font-size: 14px !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  color: var(--moss-deep) !important;
+}
+.event-now .event-brief {
+  font-family: var(--f-serif);
+  font-weight: 300;
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.25;
+  color: var(--ink);
+  max-width: 24ch;
+  margin: 0 auto;
+}
+
+/* ============ MOBILE TIMELINE ============ */
+
+@media (max-width: 760px) {
+  .timeline { padding-left: 20px; padding-right: 20px; }
+  .timeline-line, .timeline-travel, .timeline-head { left: 28px; }
+
+  .event {
+    grid-template-columns: 56px 1fr;
+    grid-template-rows: auto auto;
+    gap: 12px;
+    margin: 56px 0;
+  }
+  .event-mark   { grid-column: 1; justify-self: center; }
+  .event-year   { grid-column: 1; justify-self: center; font-size: 11px; }
+
+  .event-left .event-card,
+  .event-right .event-card,
+  .event-center .event-card {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    text-align: left;
+    padding: 0;
+  }
+  .event-left .event-desc,
+  .event-right .event-desc,
+  .event-left .event-brief,
+  .event-right .event-brief {
+    margin-left: 0;
+    margin-right: 0;
+  }
+  .event-left .event-stat,
+  .event-right .event-stat { align-items: flex-start; }
+  .event-left .event-tags,
+  .event-right .event-tags { justify-content: flex-start; }
+}
+
+/* ============ OUTRO ============ */
+
+.outro {
+  position: relative;
+  z-index: 2;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: clamp(60px, 10vh, 120px) var(--pad-x) clamp(140px, 18vh, 200px);
+  text-align: center;
+}
+.outro-kicker {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 28px;
+  font-weight: 500;
+}
+.outro-title {
+  font-family: var(--f-serif);
+  font-weight: 300;
+  font-size: clamp(48px, 9vw, 120px);
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+  margin-bottom: 32px;
+}
+.outro-title em { color: var(--moss); font-weight: 300; }
+.outro-lede {
+  max-width: 520px;
+  margin: 0 auto 40px;
+  font-size: 17px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+}
+.outro-sign {
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-bottom: 40px;
+  line-height: 1.6;
+}
+.outro-muted { color: var(--ink-muted); font-size: 13px; }
+.outro-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-soft);
+}
+.outro-meta a { border-bottom: 1px solid transparent; padding-bottom: 2px; transition: color 240ms, border-color 240ms; }
+.outro-meta a:hover { color: var(--moss-deep); border-color: var(--moss); }
+.outro-meta .dot {
+  width: 3px; height: 3px;
+  background: var(--ink-muted);
+  border-radius: 50%;
+}
+
+/* ============ CENTRE ORB ============ */
+
+/* Fixed at viewport center — the timeline scrolls behind it.
+   Morphs shape as icons activate/deactivate per career stage. */
+.orb {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 88px;
+  min-width: 88px;
+  padding: 0 8px;
+  border-radius: 44px;
+  background: var(--ink);
+  color: var(--paper);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  transition:
+    min-width 620ms var(--ease),
+    padding 620ms var(--ease),
+    border-radius 620ms var(--ease),
+    opacity 500ms var(--ease),
+    transform 620ms var(--ease),
+    background 500ms var(--ease),
+    box-shadow 500ms var(--ease);
+  pointer-events: none;
+  box-shadow:
+    0 2px 6px rgba(22, 22, 21, 0.18),
+    0 12px 40px rgba(22, 22, 21, 0.22);
+}
+
+.orb.is-visible {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Stretched pill when >= 2 icons are active */
+.orb.has-two {
+  min-width: 140px;
+  padding: 0 16px;
+}
+.orb.has-three {
+  min-width: 180px;
+  padding: 0 20px;
+}
+
+/* During state change, a subtle "absorbing" pulse */
+.orb.is-morphing {
+  animation: orbMorph 720ms var(--ease);
+}
+@keyframes orbMorph {
+  0%   { transform: translate(-50%, -50%) scale(1); }
+  35%  { transform: translate(-50%, -50%) scale(1.12); }
+  60%  { transform: translate(-50%, -50%) scale(0.96); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Soft outer halo */
+.orb-halo {
+  position: absolute;
+  inset: -18px;
+  border-radius: inherit;
+  background: radial-gradient(circle at center, rgba(58,107,74,0.25) 0%, transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 600ms var(--ease);
+}
+.orb.has-state .orb-halo { opacity: 1; }
+
+/* Slight breathing so it feels alive */
+.orb-body {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  animation: orbBreath 4.6s ease-in-out infinite;
+}
+@keyframes orbBreath {
+  0%,100% { transform: scale(1); }
+  50%     { transform: scale(1.04); }
+}
+
+/* Icon stack — active icons expand, inactive collapse */
+.orb-icons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.orb-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0;
+  height: 34px;
+  margin: 0;
+  opacity: 0;
+  transform: scale(0.5) rotate(-8deg);
+  overflow: hidden;
+  transition:
+    width 560ms var(--ease),
+    margin 560ms var(--ease),
+    opacity 440ms var(--ease),
+    transform 640ms var(--ease);
+}
+.orb-icon svg { flex: 0 0 auto; }
+.orb-icon.is-active {
+  width: 34px;
+  margin: 0 4px;
+  opacity: 1;
+  transform: scale(1) rotate(0);
+}
+
+/* When moss-coloured roles are active (YouTube/producer) the orb tints */
+.orb.has-moss { background: var(--moss-deep); }
+
+@media (max-width: 480px) {
+  .orb { height: 72px; min-width: 72px; border-radius: 36px; }
+  .orb.has-two { min-width: 120px; }
+  .orb-icon.is-active { width: 30px; }
+  .orb-icon svg { width: 24px; height: 24px; }
+}
+
+/* ============ FLOATING CTA ============ */
+
+.cta-float {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(var(--cta-y, 120%));
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  padding: 0;
+  width: 64px;
+  height: 64px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  box-shadow:
+    0 2px 12px rgba(22, 22, 21, 0.18),
+    0 12px 32px rgba(22, 22, 21, 0.2);
+  overflow: hidden;
+  transition:
+    width 520ms var(--ease),
+    gap 520ms var(--ease),
+    padding 520ms var(--ease),
+    background 300ms var(--ease),
+    color 300ms var(--ease),
+    transform 700ms var(--ease),
+    box-shadow 400ms var(--ease);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.cta-float.is-visible {
+  --cta-y: 0%;
+}
+.cta-float:hover {
+  width: 200px;
+  gap: 10px;
+  padding: 0 22px 0 18px;
+  background: var(--moss);
+  box-shadow:
+    0 2px 12px rgba(58, 107, 74, 0.28),
+    0 16px 40px rgba(58, 107, 74, 0.3);
+}
+.cta-icon {
+  flex: 0 0 auto;
+  width: 22px; height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 520ms var(--ease);
+}
+.cta-float:hover .cta-icon {
+  transform: rotate(-10deg) scale(1.05);
+}
+.cta-label {
+  font-family: var(--f-sans);
+  font-weight: 500;
+  font-size: 14px;
+  letter-spacing: 0.01em;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  transform: translateX(-6px);
+  transition: max-width 520ms var(--ease), opacity 360ms var(--ease), transform 520ms var(--ease);
+}
+.cta-float:hover .cta-label {
+  max-width: 140px;
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (max-width: 480px) {
+  .cta-float { bottom: 18px; width: 58px; height: 58px; }
+  .cta-float:hover { width: 180px; }
+}
+
+/* ============ REVEAL ANIMATIONS ============ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 900ms var(--ease), transform 900ms var(--ease);
+  will-change: transform, opacity;
+}
+.reveal.in { opacity: 1; transform: translateY(0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .grain { animation: none; }
+  .reveal, .event { opacity: 1 !important; transform: none !important; }
+  .event { transform: none !important; }
+}
