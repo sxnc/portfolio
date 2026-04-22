@@ -29,23 +29,27 @@
   --ease:  cubic-bezier(0.2, 0.8, 0.2, 1);
 
   /* Branch geometry */
-  --branch-offset: 100px; /* video branch is this far right of main line */
-  --fork-h: 80px;         /* fork joint height */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body {
+  /* Anchor both html and body to cream so nothing bleeds through when
+     scroll overscrolls past the top or the bottom of the page. */
+  background: var(--cream);
+  min-height: 100%;
+}
+
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  background: var(--cream);
+  overscroll-behavior: none;
 }
 
 body {
   font-family: var(--f-sans);
   font-weight: 400;
   color: var(--ink-body);
-  background: var(--cream);
   line-height: 1.5;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
@@ -104,81 +108,265 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   background-size: 520px 520px;
 }
 
-/* ============ INTRO ============ */
-
+/* ============ INTRO — scroll zone only ============
+   Short enough (70vh) that the very top of the timeline — including the
+   "Today" marker — peeks into the viewport on initial load, giving the
+   user a visible hint of what's below. */
 .intro {
   position: relative;
   z-index: 2;
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: clamp(72px, 12vh, 140px) var(--pad-x) clamp(80px, 14vh, 180px);
-  text-align: center;
+  min-height: 70vh;
 }
 
-.pulse {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--moss);
-  box-shadow: 0 0 0 0 var(--moss);
-  animation: pulse 2.4s ease-out infinite;
-}
-@keyframes pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(58, 107, 74, 0.55); }
-  70%  { box-shadow: 0 0 0 16px rgba(58, 107, 74, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(58, 107, 74, 0); }
-}
-
-.intro-title {
-  font-family: var(--f-serif);
-  font-weight: 300;
-  font-size: clamp(68px, 14vw, 220px);
-  line-height: 0.86;
-  letter-spacing: -0.045em;
-  color: var(--ink);
-  margin-bottom: 56px;
-}
-.intro-title .line {
-  display: block;
+/* ============ SKY / TIME-OF-DAY BACKDROP ============
+   A decorative fixed-position sky behind the big hero character.
+   Day: warm peach wash + sun + drifting clouds.
+   Night: indigo wash + moon + twinkling stars.
+   The active mode is set on the parent <div id="sky"> by main.js,
+   based on the user's local hour.
+---------------------------------------------------------- */
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
   overflow: hidden;
-  padding-bottom: 0.08em;
+  opacity: var(--sky-opacity, 1);
+  transition: opacity 420ms var(--ease);
 }
-.intro-title .word {
-  display: inline-block;
-  transform: translateY(110%);
-  animation: riseIn 1.2s var(--ease) forwards;
+.sky-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 20%, rgba(255, 208, 140, 0.35), transparent 70%),
+    linear-gradient(to bottom, rgba(255, 220, 170, 0.45), rgba(243, 237, 224, 0) 60%);
+  transition: background 1200ms var(--ease);
 }
-.intro-title .word-italic {
-  animation-delay: 0.15s;
-  color: var(--moss);
-  font-style: italic;
-  font-weight: 400;
+.sky[data-time="night"] .sky-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 18%, rgba(80, 90, 160, 0.35), transparent 72%),
+    linear-gradient(to bottom, rgba(50, 55, 100, 0.45), rgba(243, 237, 224, 0) 65%);
 }
-@keyframes riseIn { to { transform: translateY(0); } }
+.sky[data-time="dusk"] .sky-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 60% 24%, rgba(240, 140, 110, 0.40), transparent 72%),
+    radial-gradient(ellipse 80% 60% at 35% 30%, rgba(130, 100, 160, 0.30), transparent 72%),
+    linear-gradient(to bottom, rgba(200, 130, 130, 0.38), rgba(243, 237, 224, 0) 65%);
+}
+.sky[data-time="dawn"] .sky-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 30% 24%, rgba(255, 170, 120, 0.38), transparent 72%),
+    linear-gradient(to bottom, rgba(255, 180, 150, 0.38), rgba(243, 237, 224, 0) 65%);
+}
 
-.intro-lede {
-  max-width: 640px;
-  margin: 0 auto 64px;
-  font-size: clamp(17px, 1.6vw, 21px);
-  line-height: 1.55;
-  color: var(--ink-soft);
+/* Sun — drifts slowly across the upper third */
+.sky-sun {
+  position: absolute;
+  top: 18%;
+  left: 72%;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 38% 38%, #ffe2a8 0%, #ffc16a 55%, #ff9a48 100%);
+  box-shadow:
+    0 0 30px rgba(255, 180, 100, 0.55),
+    0 0 60px rgba(255, 180, 100, 0.35),
+    0 0 120px rgba(255, 180, 100, 0.2);
+  opacity: 0;
+  transform: translateY(0);
+  animation: sunFloat 22s ease-in-out infinite;
+  transition: opacity 1200ms var(--ease);
 }
-.intro-lede em { color: var(--moss-deep); font-weight: 500; }
+.sky[data-time="day"]  .sky-sun { opacity: 1; }
+.sky[data-time="dawn"] .sky-sun { opacity: 0.75; top: 40%; }
+.sky[data-time="dusk"] .sky-sun { opacity: 0.7;  top: 38%; left: 22%; background: radial-gradient(circle at 38% 38%, #ffd4a6 0%, #ff9f68 55%, #d8643f 100%); }
+@keyframes sunFloat {
+  0%,100% { transform: translateY(0) translateX(0); }
+  50%     { transform: translateY(-12px) translateX(-8px); }
+}
 
-.intro-scroll {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-  font-weight: 500;
+/* Moon — crescent feel via inner shadow + craters */
+.sky-moon {
+  position: absolute;
+  top: 16%;
+  left: 22%;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 32%, #fdf6e1 0%, #eadfb6 50%, #c7b985 100%);
+  box-shadow:
+    inset -10px -6px 20px rgba(90, 70, 30, 0.18),
+    0 0 24px rgba(240, 220, 160, 0.4),
+    0 0 60px rgba(200, 180, 130, 0.25);
+  opacity: 0;
+  animation: moonFloat 28s ease-in-out infinite;
+  transition: opacity 1200ms var(--ease);
 }
-.intro-scroll svg { animation: bob 2.4s ease-in-out infinite; color: var(--moss); }
-@keyframes bob {
+.sky[data-time="night"] .sky-moon { opacity: 1; }
+.sky[data-time="dusk"]  .sky-moon { opacity: 0.6; }
+.sky[data-time="dawn"]  .sky-moon { opacity: 0.3; }
+.sky-crater {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(140, 120, 80, 0.25);
+}
+.sky-crater-1 { width: 14px; height: 14px; top: 30%; left: 58%; }
+.sky-crater-2 { width:  9px; height:  9px; top: 58%; left: 30%; }
+.sky-crater-3 { width:  6px; height:  6px; top: 22%; left: 34%; }
+@keyframes moonFloat {
   0%,100% { transform: translateY(0); }
-  50%     { transform: translateY(6px); }
+  50%     { transform: translateY(-8px); }
+}
+
+/* Stars — twinkle via opacity keyframes */
+.sky-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(255, 245, 220, 0.95);
+  box-shadow: 0 0 6px rgba(255, 245, 220, 0.8);
+  opacity: 0;
+  animation: starTwinkle 4s ease-in-out infinite;
+}
+.sky[data-time="night"] .sky-star { opacity: 1; }
+.sky[data-time="dusk"]  .sky-star { opacity: 0.6; }
+.sky-star-1 { top: 18%; left: 14%; animation-delay: 0s;   }
+.sky-star-2 { top: 12%; left: 38%; animation-delay: 0.8s; width: 2px; height: 2px; }
+.sky-star-3 { top: 26%; left: 62%; animation-delay: 1.6s; }
+.sky-star-4 { top: 32%; left: 82%; animation-delay: 2.2s; width: 2px; height: 2px; }
+.sky-star-5 { top: 8%;  left: 72%; animation-delay: 0.4s; width: 2px; height: 2px; }
+.sky-star-6 { top: 22%; left: 48%; animation-delay: 3s;   }
+@keyframes starTwinkle {
+  0%,100% { opacity: 0.3; transform: scale(0.9); }
+  50%     { opacity: 1;   transform: scale(1.15); }
+}
+
+/* Clouds — soft blobs drifting horizontally across the day sky */
+.sky-cloud {
+  position: absolute;
+  background: rgba(253, 250, 240, 0.7);
+  border-radius: 100px;
+  box-shadow:
+    20px -6px 0 -4px rgba(253, 250, 240, 0.65),
+    -18px -4px 0 -6px rgba(253, 250, 240, 0.6);
+  opacity: 0;
+  animation: cloudDrift 60s linear infinite;
+  transition: opacity 1200ms var(--ease);
+  filter: blur(0.5px);
+}
+.sky[data-time="day"]  .sky-cloud { opacity: 1; }
+.sky[data-time="dawn"] .sky-cloud { opacity: 0.7; }
+.sky[data-time="dusk"] .sky-cloud { opacity: 0.55; }
+.sky-cloud-1 { top: 22%; width: 80px; height: 20px; animation-duration: 70s; }
+.sky-cloud-2 { top: 38%; width: 110px; height: 24px; animation-duration: 90s; animation-delay: -20s; }
+.sky-cloud-3 { top: 14%; width: 60px; height: 16px; animation-duration: 55s; animation-delay: -40s; }
+@keyframes cloudDrift {
+  0%   { transform: translateX(-160px); }
+  100% { transform: translateX(calc(100vw + 160px)); }
+}
+
+/* Sky fades out as the user scrolls into the timeline (driven by
+   --sky-opacity set in main.js alongside the intro scale). */
+
+@media (prefers-reduced-motion: reduce) {
+  .sky-sun, .sky-moon, .sky-cloud, .sky-star { animation: none !important; }
+}
+
+/* Speech bubble above the enlarged character. Fixed-positioned so it
+   floats independently of the character (which is itself fixed and
+   scroll-scaled). Styled after the backpack panel — paper background,
+   rounded corners, soft shadow, no coloured border. */
+.char-intro-bubble {
+  position: fixed;
+  top: calc(50% - 170px);
+  left: 50%;
+  transform: translate(-50%, -100%);
+  z-index: 72;
+  width: min(540px, 90vw);
+  padding: 22px 28px 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow:
+    0 14px 36px rgba(22, 22, 21, 0.18),
+    0 2px 6px rgba(22, 22, 21, 0.08);
+  text-align: left;
+  font-family: var(--f-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-body);
+  opacity: var(--intro-opacity, 1);
+  transition: opacity 320ms var(--ease);
+  pointer-events: auto;
+}
+/* Downward tail pointing at the character's mouth below — two stacked
+   triangles so the subtle `--line` border on the bubble is continued
+   along the tail's sides. */
+.char-intro-bubble::before,
+.char-intro-bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-left: 13px solid transparent;
+  border-right: 13px solid transparent;
+  transform: translateX(-50%);
+}
+.char-intro-bubble::before {
+  border-top: 13px solid var(--line);
+}
+.char-intro-bubble::after {
+  margin-top: -1px;
+  border-left-width: 12px;
+  border-right-width: 12px;
+  border-top: 12px solid var(--paper);
+}
+.char-intro-bubble.is-hidden {
+  pointer-events: none;
+}
+.char-intro-bubble > p       { margin-bottom: 10px; }
+.char-intro-bubble > p:last-child { margin-bottom: 0; }
+.char-intro-bubble strong    { font-weight: 600; color: var(--ink); }
+/* Serif italic highlights match the existing event-card `<em>` idiom —
+   same font size as surrounding body text (Fraunces reads larger than
+   Inter at equal size, so we pin it to 1em and let the body size rule). */
+.char-intro-bubble em {
+  color: var(--moss-deep);
+  font-size: 1em;
+  font-style: italic;
+}
+
+.char-intro-heading {
+  font-family: var(--f-serif);
+  font-weight: 500;
+  font-size: clamp(24px, 2.6vw, 32px);
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+.char-intro-heading em { color: var(--moss); font-size: 1em; }
+
+.char-intro-cta {
+  color: var(--moss-deep);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  transition: color 240ms var(--ease);
+}
+.char-intro-cta:hover { color: var(--moss); }
+
+/* On narrow screens, bring the bubble in closer to the character. */
+@media (max-width: 620px) {
+  .char-intro-bubble {
+    top: calc(50% - 160px);
+    padding: 18px 20px 16px;
+    font-size: 13px;
+  }
 }
 
 /* ============ TIMELINE ============ */
@@ -191,66 +379,65 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   padding: 40px var(--pad-x) 120px;
 }
 
-/* Main spine — full-length thin line */
-.timeline-line-main {
+/* "Today" marker at the top of the timeline — static black dot with
+   a cream-backed italic label tucked underneath so the spine doesn't
+   run through the text. */
+.timeline-today {
   position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: var(--line);
-  transform: translateX(-50%);
-  pointer-events: none;
-}
-
-/* Video branch line — only visible between fork-top and fork-bottom */
-.timeline-line-video {
-  position: absolute;
-  left: calc(50% + var(--branch-offset));
-  top: var(--video-line-top, 0);
-  height: var(--video-line-height, 0);
-  width: 1px;
-  background: var(--line);
-  transform: translateX(-50%);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 600ms var(--ease);
-}
-.timeline.has-branch .timeline-line-video { opacity: 1; }
-
-/* Fork joints — SVG curves connecting main ↔ video branch */
-.timeline-fork {
-  position: absolute;
+  top: -4px;
   left: 50%;
   transform: translateX(-50%);
-  width: calc(var(--branch-offset) * 2 + 20px);
-  height: var(--fork-h);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
   pointer-events: none;
+}
+.timeline-today-dot {
+  width: 12px;
+  height: 12px;
+  background: var(--ink);
+  border: 3px solid var(--cream);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.timeline-today-label {
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--ink-muted);
+  background: var(--cream);
+  padding: 1px 7px;
+}
+
+/* Bending spine — an SVG path recomputed per scroll frame in main.js.
+   The path's baseline is vertical at timeline-x = 50%, but bends
+   horizontally toward whichever event is currently closest to viewport
+   centre. .spine-path is the full faint line; .spine-trace is the moss
+   "already-walked" overlay, clipped via stroke-dasharray from the top. */
+.timeline-spine {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   overflow: visible;
-  opacity: 0;
-  transition: opacity 600ms var(--ease);
-}
-.timeline.has-branch .timeline-fork { opacity: 1; }
-.timeline-fork .fork-path {
-  stroke: var(--line);
-  stroke-width: 1;
-  fill: none;
-  vector-effect: non-scaling-stroke;
-}
-.timeline-fork-top    { top: var(--fork-top-y, 0); }
-.timeline-fork-bottom { top: var(--fork-bottom-y, 0); }
-
-/* Moss-coloured "traced" overlay on main line */
-.timeline-travel {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  width: 1px;
-  height: var(--travel, 0px);
-  background: linear-gradient(to bottom, transparent, var(--moss) 40%, var(--moss));
-  transform: translateX(-50%);
-  will-change: height;
   pointer-events: none;
+  z-index: 1;
+}
+.spine-path,
+.spine-trace {
+  fill: none;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.spine-path  { stroke: var(--line); }
+.spine-trace {
+  stroke: var(--moss);
+  stroke-dasharray: var(--trace-len, 0) 99999;
 }
 
 /* ============ EVENTS ============ */
@@ -259,6 +446,7 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   position: relative;
   display: grid;
   grid-template-columns: 1fr 120px 1fr;
+  grid-template-rows: auto auto;
   gap: 0;
   align-items: start;
   margin: clamp(64px, 10vh, 120px) 0;
@@ -276,63 +464,114 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 .event-minor { --speed: 18px; margin: clamp(40px, 6vh, 80px) 0; }
 .event-now   { --speed: 0px;  margin: 0 0 clamp(80px, 14vh, 160px); }
 
-/* Marks on the line */
+/* Extra breathing room between the 1986 Born event and the first real
+   event above it — gives the baby variant its own "chapter break" on
+   the timeline. */
+.event[data-baby-source="true"] { margin-top: clamp(140px, 20vh, 240px); }
+
+/* The 1986 event is the origin of the whole timeline — mark it with a
+   big moss dot instead of the usual tiny minor-event dot. Overrides
+   .event-minor .event-mark for just this one event. Alignment is
+   handled by the shared --mark-align variable (computed against the
+   event's title by measureMarkOffsets in main.js). */
+.event[data-baby-source="true"] .event-mark {
+  width: 20px;
+  height: 20px;
+  background: var(--moss);
+  border: 4px solid var(--cream);
+  box-shadow:
+    0 0 0 1px var(--moss),
+    0 0 0 7px rgba(58, 107, 74, 0.15);
+}
+
+/* Marks on the line. --bend-offset is set per-frame by main.js so the
+   dot rides the bent SVG spine. --mark-align is measured once per event
+   on layout and positions the dot at the vertical centre of the event's
+   <h3 class="event-title"> — so the bulge peak aligns with the title,
+   not the icon above it. */
 .event-mark {
   grid-column: 2;
+  grid-row: 1 / span 2;
   justify-self: center;
+  align-self: start;
   width: 11px; height: 11px;
   background: var(--ink);
   border: 3px solid var(--cream);
   border-radius: 50%;
   position: relative;
   z-index: 2;
-  margin-top: 4px;
+  margin-top: var(--mark-align, 22px);
   box-shadow: 0 0 0 1px var(--line);
-  transition: transform 600ms var(--ease), background 300ms var(--ease);
+  transform: translateX(var(--bend-offset, 0px));
+  transition: background 300ms var(--ease);
 }
 .event-minor .event-mark {
   width: 7px; height: 7px;
   background: var(--paper);
   border: 1px solid var(--line-strong);
   box-shadow: 0 0 0 3px var(--cream);
+  /* Alignment inherits from --mark-align (title-centred), set by JS. */
 }
 
-/* Video-branch marks sit on the video line, not the main line */
-.event-mark-video {
-  transform: translateX(var(--branch-offset));
-  background: var(--moss-deep);
-  border-color: var(--cream);
-  box-shadow: 0 0 0 1px var(--moss);
+/* Connector line from each dot toward its event card. Animated from
+   the event inward toward the spine (draws outward → inward). When the
+   event is centred on the character (.is-active), the line is fully
+   drawn; otherwise it retracts toward the card. */
+.event {
+  --line-factor: max(0, calc((0.5 - var(--s-abs, 1)) * 2));
 }
-.event-minor .event-mark-video {
-  background: var(--paper);
-  border: 1px solid var(--moss);
-  box-shadow: 0 0 0 3px var(--cream);
+.event.is-active { --line-factor: 1; }
+.event-mark::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  margin-top: -0.5px;
+  height: 1px;
+  width: 54px;
+  background: var(--line-strong);
+  pointer-events: none;
+  opacity: calc(var(--line-factor, 0) * 0.9);
+  transition: opacity 220ms var(--ease);
 }
+.event-left  .event-mark::after {
+  right: calc(100% + 4px);
+  transform-origin: left center;       /* grow from the card toward the spine */
+  transform: scaleX(var(--line-factor, 0));
+  transition: transform 360ms var(--ease), opacity 220ms var(--ease);
+}
+.event-right .event-mark::after {
+  left: calc(100% + 4px);
+  transform-origin: right center;      /* grow from the card toward the spine */
+  transform: scaleX(var(--line-factor, 0));
+  transition: transform 360ms var(--ease), opacity 220ms var(--ease);
+}
+.event-center .event-mark::after,
+.event-now    .event-mark::after { display: none; }
 
-.event-mark-split {
-  box-shadow: 0 0 0 1px var(--moss), 0 0 0 6px rgba(58, 107, 74, 0.12);
-}
-.event-mark-merge {
-  /* EVERYWOW — where both lines converge */
-  box-shadow: 0 0 0 1px var(--moss), 0 0 0 6px rgba(58, 107, 74, 0.14);
-}
-
-/* Year label */
+/* Year label — sits above its event card, on the same side of the
+   timeline as the card. Spine stays clean; year stays readable. */
 .event-year {
-  grid-column: 2;
-  justify-self: center;
+  grid-row: 1;
   font-family: var(--f-serif);
   font-style: italic;
   font-size: 13px;
   color: var(--ink-muted);
-  margin-top: 10px;
+  margin-bottom: 6px;
   letter-spacing: 0.02em;
   white-space: nowrap;
   transform: translateY(calc(var(--s) * -4px));
   transition: color 300ms var(--ease);
 }
-.event-video .event-year { transform: translateX(var(--branch-offset)) translateY(calc(var(--s) * -4px)); color: var(--moss-deep); }
+.event-left  .event-year {
+  grid-column: 1;
+  justify-self: start;
+  padding-left: clamp(20px, 4vw, 56px);
+}
+.event-right .event-year {
+  grid-column: 3;
+  justify-self: start;
+  padding-left: clamp(20px, 4vw, 56px);
+}
 .event-major .event-year {
   color: var(--moss-deep);
   font-weight: 500;
@@ -343,9 +582,10 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   text-transform: uppercase;
 }
 
-/* Cards — branch left or right */
+/* Cards — branch left or right. Card sits in row 2 (the year label is
+   in row 1 above it). */
 .event-card {
-  grid-row: 1 / span 2;
+  grid-row: 2;
   padding: 4px 0;
   position: relative;
   --drift: calc(var(--side) * var(--s-abs) * 14px);
@@ -358,15 +598,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 .event-left  { --side: -1; }
 .event-right { --side:  1; }
 
-.event-left .event-card  { grid-column: 1; text-align: right; padding-right: clamp(20px, 4vw, 56px); }
-.event-right .event-card { grid-column: 3; text-align: left;  padding-left:  clamp(20px, 4vw, 56px); }
-
-/* Video events live further right so they hang off the video branch line */
-.event-video .event-card {
-  grid-column: 3;
-  text-align: left;
-  padding-left: calc(clamp(20px, 4vw, 56px) + var(--branch-offset));
-}
+.event-left .event-card  { grid-column: 1; text-align: left; padding-right: clamp(20px, 4vw, 56px); padding-left: clamp(20px, 4vw, 56px); }
+.event-right .event-card { grid-column: 3; text-align: left; padding-left:  clamp(20px, 4vw, 56px); padding-right: clamp(20px, 4vw, 56px); }
 
 .event-center .event-card {
   grid-column: 1 / -1;
@@ -387,7 +620,10 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 
 /* Icons */
 .event-icon {
-  display: inline-flex;
+  /* Block-level flex so the icon occupies its own line (not sharing one
+     with the kicker span). That keeps the icon's top edge at the very top
+     of the card — so the `.event-mark` dot aligns visually with it. */
+  display: flex;
   align-items: center;
   justify-content: center;
   width: 40px; height: 40px;
@@ -409,9 +645,13 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 }
 .event-major .event-icon { width: 48px; height: 48px; }
 .event-major .event-icon i { font-size: 24px; }
-.event-left  .event-icon { margin-left: auto; }
-.event-right .event-icon { margin-right: auto; }
-.event-video .event-icon {
+/* All icons now align to the left of their card (card text is also
+   left-aligned regardless of the card's side of the timeline). */
+.event-left  .event-icon,
+.event-right .event-icon { margin-right: auto; margin-left: 0; }
+/* Right-side events now carry a moss-tinted icon (creative track) while
+   left-side events keep the neutral paper icon (professional track). */
+.event-right .event-icon {
   background: rgba(58, 107, 74, 0.06);
   border-color: rgba(58, 107, 74, 0.22);
 }
@@ -457,8 +697,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   max-width: 42ch;
   transform: translateY(calc(var(--s) * -4px));
 }
-.event-left .event-desc { margin-left: auto; }
-.event-right .event-desc { margin-right: auto; }
+.event-left .event-desc,
+.event-right .event-desc { margin-left: 0; margin-right: auto; }
 
 .event-brief {
   font-size: 15px;
@@ -468,8 +708,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   transform: translateY(calc(var(--s) * -4px));
 }
 .event-brief strong { color: var(--ink); font-weight: 600; }
-.event-left .event-brief { margin-left: auto; }
-.event-right .event-brief { margin-right: auto; }
+.event-left  .event-brief,
+.event-right .event-brief { margin-left: 0; margin-right: auto; }
 
 /* Stats block — supports single or pair */
 .event-stats {
@@ -477,8 +717,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   gap: 12px;
   margin-bottom: 18px;
 }
-.event-left  .event-stats { justify-content: flex-end;   margin-left: auto; }
-.event-right .event-stats { justify-content: flex-start; margin-right: auto; }
+.event-left  .event-stats,
+.event-right .event-stats { justify-content: flex-start; margin-left: 0; margin-right: auto; }
 
 .event-stat {
   display: inline-flex;
@@ -492,7 +732,7 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   transform: translateY(calc(var(--s) * -3px));
 }
 .event-stats .event-stat { margin-bottom: 0; }
-.event-left .event-stat  { align-items: flex-end; }
+.event-left  .event-stat,
 .event-right .event-stat { align-items: flex-start; }
 .event-stat-num {
   font-family: var(--f-serif);
@@ -519,7 +759,7 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   max-width: 42ch;
   transform: translateY(calc(var(--s) * -2px));
 }
-.event-left .event-tags  { justify-content: flex-end; }
+.event-left  .event-tags,
 .event-right .event-tags { justify-content: flex-start; }
 .event-tags li {
   font-size: 11px;
@@ -586,10 +826,9 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 
 @media (max-width: 900px) {
   .timeline { padding-left: 20px; padding-right: 20px; }
-  .timeline-line-main,
-  .timeline-travel { left: 28px; }
-  .timeline-line-video,
-  .timeline-fork { display: none; }
+  /* On narrow screens the spine collapses to a left rail; main.js
+     detects this via matchMedia and skips the bend logic, pinning the
+     path to x = 28px. */
 
   .event {
     grid-template-columns: 56px 1fr;
@@ -599,12 +838,13 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
     --drift: 0px;
   }
   .event-mark   { grid-column: 1; justify-self: center; transform: none !important; }
-  .event-year   { grid-column: 1; justify-self: center; font-size: 11px; transform: none !important; }
+  .event-left  .event-year,
+  .event-right .event-year,
+  .event-year  { grid-column: 2; justify-self: start; font-size: 11px; transform: none !important; padding: 0; }
 
   .event-left .event-card,
   .event-right .event-card,
-  .event-center .event-card,
-  .event-video .event-card {
+  .event-center .event-card {
     grid-column: 2;
     grid-row: 1 / span 2;
     text-align: left;
@@ -628,62 +868,31 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   .event-center .event-icon { margin-left: 0; margin-right: 0; }
 }
 
-/* ============ OUTRO ============ */
-
+/* ============ FOOTER ============
+   Generous top padding (40vh) gives the user enough scroll after the
+   last event (1986) to actually bring that event into the viewport's
+   centre — which is where the baby variant kicks in. */
 .outro {
   position: relative;
   z-index: 2;
-  max-width: 720px;
   margin: 0 auto;
-  padding: clamp(60px, 10vh, 120px) var(--pad-x) clamp(140px, 18vh, 200px);
+  padding: 40vh var(--pad-x) 32px;
   text-align: center;
 }
-.outro-kicker {
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
+.outro-copy {
+  margin: 0;
+  font-family: var(--f-sans);
+  font-size: 12px;
+  letter-spacing: 0.08em;
   color: var(--ink-muted);
-  margin-bottom: 28px;
-  font-weight: 500;
 }
-.outro-title {
-  font-family: var(--f-serif);
-  font-weight: 300;
-  font-size: clamp(48px, 9vw, 120px);
-  line-height: 0.95;
-  letter-spacing: -0.04em;
-  color: var(--ink);
-  margin-bottom: 32px;
+.outro-copy em {
+  font-style: italic;
+  color: var(--moss-deep);
 }
-.outro-title em { color: var(--moss); font-weight: 300; }
-.outro-lede {
-  max-width: 520px;
-  margin: 0 auto 40px;
-  font-size: 17px;
-  line-height: 1.6;
-  color: var(--ink-soft);
-}
-.outro-sign {
-  font-size: 14px;
-  color: var(--ink-soft);
-  margin-bottom: 40px;
-  line-height: 1.6;
-}
-.outro-muted { color: var(--ink-muted); font-size: 13px; }
-.outro-meta {
-  display: inline-flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-soft);
-}
-.outro-meta a { border-bottom: 1px solid transparent; padding-bottom: 2px; transition: color 240ms, border-color 240ms; }
-.outro-meta a:hover { color: var(--moss-deep); border-color: var(--moss); }
-.outro-meta .dot {
-  width: 3px; height: 3px;
-  background: var(--ink-muted);
-  border-radius: 50%;
+.outro-sep {
+  margin: 0 8px;
+  opacity: 0.55;
 }
 
 /* ============ CHARACTER — image-based, walking Victor ============
@@ -697,21 +906,36 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   top: 50%;
   left: 50%;
   z-index: 70;
-  /* 25% larger than the previous pass; aspect-matched to the new videos
-     (480 × 720 → 0.667 ratio). */
   width: 88px;
   height: 132px;
-  transform: translate(-50%, -50%) scale(0.6);
+  /* --char-scale is driven from main.js by scroll position: 2.2 at the
+     page top (intro), 1 once the user is inside the timeline. */
+  transform: translate(-50%, -50%) scale(var(--char-scale, 1));
   opacity: 0;
   pointer-events: none;
-  transition:
-    opacity 500ms var(--ease),
-    transform 620ms var(--ease);
+  transition: opacity 500ms var(--ease);
 }
 .character.is-visible {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
   pointer-events: auto;
+}
+/* While the character is scaled up (intro mode), keep the CTA and
+   panel overlays quiet — but the char-hint green dot stays on so the
+   user can still open the backpack from the hero stage. Opening it
+   there dismisses the intro speech bubble (handled in main.js). */
+.character.intro-mode .char-cta,
+.character.intro-mode .char-skills {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+/* Intro-mode: keep the hint dot visible but un-scale it so the scaled
+   character transform doesn't inflate it past readability. */
+.character.intro-mode .char-hint {
+  transform: translate(0, -50%) scale(calc(1 / var(--char-scale, 1)));
+  transform-origin: 0 50%;
+}
+.character.intro-mode .char-hint:hover {
+  transform: translate(0, -50%) scale(calc(1.15 / var(--char-scale, 1)));
 }
 
 .char-art-wrap {
@@ -764,12 +988,28 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
     url(#char-backdrop)
     drop-shadow(0 0 2px var(--cream))
     drop-shadow(0 0 2px var(--cream));
-  transition: opacity 460ms var(--ease), transform 520ms var(--ease);
+  /* Game-style "pop" when the variant swaps: quick squash-and-pop on a
+     short timing, instead of a gentle cross-fade. */
+  opacity: 0;
+  transform: scale(0.78);
+  transition:
+    opacity 200ms cubic-bezier(0.3, 1.4, 0.5, 1),
+    transform 320ms cubic-bezier(0.3, 1.6, 0.5, 1);
 }
-.char-adult { opacity: 1; }
-.char-teen  { opacity: 0; }
-.character.is-young .char-adult { opacity: 0; }
-.character.is-young .char-teen  { opacity: 1; }
+.char-adult { opacity: 1; transform: scale(1); }
+.character.is-young .char-adult { opacity: 0; transform: scale(0.78); }
+.character.is-young .char-teen  { opacity: 1; transform: scale(1); }
+.character.is-baby  .char-adult,
+.character.is-baby  .char-teen  { opacity: 0; transform: scale(0.78); }
+.character.is-baby  .char-baby  { opacity: 1; transform: scale(1); }
+
+/* Baby variant: gentle crib rocking (tilt-rock, not a bounce) while
+   the character is in baby mode. */
+.character.is-baby .char-baby { animation: babyRock 2.6s ease-in-out infinite; transform-origin: 50% 90%; }
+@keyframes babyRock {
+  0%,100% { transform: scale(1) rotate(-5deg); }
+  50%     { transform: scale(1) rotate(5deg); }
+}
 
 /* Collect-bump — a quick scale pulse on the whole wrapper. Layers on top of
    the leg-walk animations (separate properties) without stomping them. */
@@ -814,6 +1054,57 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 @keyframes charPing {
   0%   { opacity: 0.9; transform: translate(-50%, -50%) scale(0.4); }
   100% { opacity: 0;   transform: translate(-50%, -50%) scale(2.2); }
+}
+
+/* Small pulsing moss dot sitting just above the backpack's top edge —
+   the same pulse idiom as the "Today" timeline marker, but ~half size.
+   Signals "hover here, it's interactive". Has pointer-events, so
+   hovering the dot itself opens the backpack and the CTA bubble.
+   An invisible hit-pad around the dot makes it comfortably clickable
+   even though the dot itself is tiny.
+   Stays visible during the intro/hero stage (even while the big
+   speech bubble has focus) so the user sees that there's an inventory
+   to open. */
+.char-hint {
+  position: absolute;
+  top: 32%;
+  left: calc(100% - 2px);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--moss);
+  border: 2px solid var(--cream);
+  box-shadow: 0 0 0 1px var(--moss),
+              0 0 0 4px rgba(58, 107, 74, 0.14);
+  transform: translateY(-50%);
+  cursor: pointer;
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 360ms var(--ease), transform 220ms var(--ease);
+  z-index: 76;
+}
+/* Invisible larger hit-pad around the tiny visible dot. */
+.char-hint::before {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+}
+.character.is-visible .char-hint { opacity: 1; }
+.character.is-open    .char-hint { opacity: 0.3; }
+.char-hint:hover { transform: translateY(-50%) scale(1.15); }
+
+.char-hint-pulse {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  background: var(--moss);
+  animation: hintPulse 2s ease-out infinite;
+}
+@keyframes hintPulse {
+  0%   { box-shadow: 0 0 0 0  rgba(58, 107, 74, 0.55); }
+  70%  { box-shadow: 0 0 0 9px rgba(58, 107, 74, 0);  }
+  100% { box-shadow: 0 0 0 0  rgba(58, 107, 74, 0);   }
 }
 
 /* ============ BACKPACK PANEL — video-game inventory ============ */
@@ -954,7 +1245,9 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 }
 .char-skills-grid[data-active-cat="tech"]   .char-skill[data-cat="tech"],
 .char-skills-grid[data-active-cat="people"] .char-skill[data-cat="people"],
-.char-skills-grid[data-active-cat="craft"]  .char-skill[data-cat="craft"] {
+.char-skills-grid[data-active-cat="craft"]  .char-skill[data-cat="craft"],
+.char-skills-grid[data-active-cat="hobby"]  .char-skill[data-cat="hobby"],
+.char-skills-grid[data-active-cat="baby"]   .char-skill[data-cat="baby"] {
   display: flex;
 }
 .char-skill:hover {
@@ -963,14 +1256,37 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   box-shadow: 0 4px 10px rgba(22, 22, 21, 0.1);
 }
 .char-skill.is-removed { display: none !important; }
-.char-skill.just-added {
-  animation: skillPop 480ms cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+
+/* Pure scale pop — settles cleanly at 1.0 without overshooting (so the
+   tile never bleeds past its grid cell and touches its neighbours). */
 @keyframes skillPop {
-  0%   { opacity: 0; transform: scale(0.25) rotate(-12deg); }
-  60%  { opacity: 1; transform: scale(1.15) rotate(4deg); }
-  100% { opacity: 1; transform: scale(1) rotate(0); }
+  0%   { opacity: 0; transform: scale(0.5); }
+  100% { opacity: 1; transform: scale(1); }
 }
+.char-skill.just-added {
+  animation: skillPop 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-delay: calc(var(--batch-i, 0) * 80ms);
+  animation-fill-mode: both;
+}
+
+/* Cascading fill-up when the backpack opens — each skill scales in with
+   a small stagger based on its index within its category. */
+.character.is-open .char-skill {
+  animation: skillPop 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation-delay: calc(var(--i, 0) * 32ms);
+  animation-fill-mode: both;
+}
+/* A skill arriving mid-open keeps its own batch stagger, not the whole
+   panel's cascade delay. */
+.character.is-open .char-skill.just-added {
+  animation-delay: calc(var(--batch-i, 0) * 80ms);
+}
+
+/* Hide tab buttons for categories that currently have no skills */
+.char-skills-tabs button.is-hidden { display: none; }
+
+/* Smooth the panel resizing when skills come and go while open */
+.char-skills { will-change: height; }
 
 .char-skill-icon {
   width: 26px;
@@ -1044,6 +1360,54 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   100% { opacity: 0; transform: translate(-50%, -80px); }
 }
 
+/* ============ LEVEL-UP POPUP ============
+   Flashier version of the skill popup, fired when the character ages up
+   across the 2018 threshold (teen → adult). Bigger, overshoot pop, stars
+   on both sides, held longer so you can read it. ~2 seconds total.
+------------------------------------------- */
+.level-popup {
+  position: fixed;
+  z-index: 96;
+  pointer-events: none;
+  font-family: var(--f-sans);
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--moss-deep);
+  text-shadow:
+    0 0 6px var(--cream),
+    0 0 14px rgba(58, 107, 74, 0.5),
+    0 2px 4px var(--cream);
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, 0);
+  animation: levelUp 2100ms cubic-bezier(0.3, 1.4, 0.5, 1) forwards;
+}
+.level-popup i {
+  display: inline-block;
+  margin: 0 8px;
+  color: var(--moss);
+  font-size: 22px;
+  vertical-align: -3px;
+  animation: levelStar 2100ms cubic-bezier(0.3, 1.6, 0.5, 1) forwards;
+}
+.level-popup i:last-child { animation-delay: 60ms; }
+
+@keyframes levelUp {
+  0%   { opacity: 0; transform: translate(-50%,  24px) scale(0.3) rotate(-6deg); }
+  12%  { opacity: 1; transform: translate(-50%, -12px) scale(1.28) rotate(3deg); }
+  24%  { opacity: 1; transform: translate(-50%, -20px) scale(1)    rotate(0); }
+  65%  { opacity: 1; transform: translate(-50%, -46px) scale(1)    rotate(0); }
+  100% { opacity: 0; transform: translate(-50%, -92px) scale(0.94) rotate(0); }
+}
+@keyframes levelStar {
+  0%,10% { transform: scale(0.3) rotate(-60deg); }
+  20%    { transform: scale(1.5) rotate(25deg); }
+  32%    { transform: scale(1)   rotate(0); }
+  100%   { transform: scale(1)   rotate(0); }
+}
+
 /* ============ RESPONSIVE CHARACTER ============ */
 
 @media (max-width: 900px) {
@@ -1058,6 +1422,22 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   }
   .character.is-open .char-skills {
     transform: translate(0, -50%) scale(1) rotate(0);
+  }
+
+  /* Bubble shrinks proportionally (0.795×) to keep the same visual
+     distance from the character's face. */
+  .char-cta       { top: -14px; right: 52px; }
+  .char-cta::after{ top: calc(100% - 6px); width: 10px; height: 11px; }
+  .char-cta-bubble{
+    min-width: 22px;
+    height: 16px;
+    padding: 2px 8px;
+    font-size: 9px;
+    border-radius: 8px;
+  }
+  .character.is-open .char-cta-bubble {
+    min-width: 66px;
+    padding: 2px 10px;
   }
 }
 @media (max-width: 520px) {
@@ -1086,16 +1466,19 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 
 /* ============ SPEECH-BUBBLE CTA ============
    Two-layer setup: the outer <a> is the positioned wrapper (unclipped,
-   owns the tail pseudo); the inner .char-cta-bubble is the actual
-   bubble (overflow: hidden, owns the text via ::before). The tail
-   hangs from the wrapper's bottom-right and points straight down to
-   the character's mouth. On hover the bubble widens leftward.
+   owns the tail pseudo); the inner .char-cta-bubble is the bubble body
+   (overflow: hidden, owns the text via ::before). Expansion is driven
+   by the same `.character.is-open` class that opens the backpack, so
+   bubble and bag grow/retract together. Single-stage ease-in-out.
 --------------------------------------------------- */
 
+/* One shared easing + duration for every bubble transition — matching
+   timings make the scale, width and colour changes move as one piece
+   rather than several overlapping stages. */
 .char-cta {
   position: absolute;
-  top: -6px;                 /* bubble sits above the character's head */
-  right: 40px;               /* right edge anchored at x=48 → tail tip lands at mouth */
+  top: -18px;
+  right: 65px;
   z-index: 78;
   display: inline-flex;
   align-items: center;
@@ -1103,40 +1486,54 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   text-decoration: none;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 420ms var(--ease);
+  transform: scale(1);
+  transform-origin: bottom right;  /* grow up + left on expansion */
+  will-change: transform;
+  contain: layout;                 /* isolate min-width reflow */
+  transition:
+    opacity   280ms cubic-bezier(0.45, 0, 0.55, 1),
+    transform 280ms cubic-bezier(0.45, 0, 0.55, 1);
 }
 .character.is-visible .char-cta {
   opacity: 1;
   pointer-events: auto;
 }
+/* Enlarge the entire bubble + tail when the backpack is open.
+   Default size is preserved while scrolling. */
+.character.is-open .char-cta {
+  transform: scale(1.7);
+}
 
-/* Tail — triangle hanging below the wrapper, tip at the character's mouth.
-   Positioned so the tip lands at (x=44, y≈44), i.e. the mouth of the
-   character inside an 88×132 container. */
+/* Tail — short rotated triangle tucked against the bubble's bottom-right. */
 .char-cta::after {
   content: "";
   position: absolute;
-  top: calc(100% - 1px);     /* overlap bubble by 1px — no seam */
-  right: -2px;               /* nudge right slightly so tip aligns with mouth centre */
-  width: 12px;
-  height: 30px;
-  background: var(--ink);
+  top: calc(100% - 7px);
+  right: 0;
+  width: 13px;
+  height: 14px;
+  background: var(--moss-deep);
   clip-path: polygon(0 0, 100% 0, 50% 100%);
-  transition: background 260ms var(--ease);
+  transform: rotate(-22deg);
+  transition: background 280ms cubic-bezier(0.45, 0, 0.55, 1);
 }
 
-/* Bubble body — takes the hover styles + holds the text content. */
+/* Bubble body — bubble expands first, then the final text fades in.
+   Two text layers share the bubble: the collapsed dots and the full
+   phrase. Only opacity transitions (no letter-spacing/font shift), so
+   nothing "slides" mid-animation. */
 .char-cta-bubble {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   padding: 3px 10px;
   min-width: 28px;
   height: 20px;
-  background: var(--ink);
+  background: var(--moss-deep);
   color: var(--paper);
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(22, 22, 21, 0.2);
+  box-shadow: 0 2px 6px rgba(58, 107, 74, 0.28);
   font-family: var(--f-sans);
   font-weight: 600;
   font-size: 10px;
@@ -1145,33 +1542,41 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   overflow: hidden;
   cursor: pointer;
   transition:
-    min-width 360ms cubic-bezier(0.34, 1.4, 0.64, 1),
-    padding 360ms var(--ease),
-    background 260ms var(--ease),
-    box-shadow 300ms var(--ease);
+    min-width  280ms cubic-bezier(0.45, 0, 0.55, 1),
+    background 280ms cubic-bezier(0.45, 0, 0.55, 1),
+    box-shadow 280ms cubic-bezier(0.45, 0, 0.55, 1);
+}
+.char-cta-bubble::before,
+.char-cta-bubble::after {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 160ms linear;
 }
 .char-cta-bubble::before {
   content: "...";
   letter-spacing: 0.25em;
-  transform: translateY(-1px);
+  opacity: 1;
 }
-
-/* Hover: widen the bubble leftward; swap "..." → "Let's talk!";
-   recolour the tail to match. */
-.char-cta:hover .char-cta-bubble {
-  background: var(--moss);
-  min-width: 82px;
-  padding: 3px 12px;
-  box-shadow: 0 2px 10px rgba(58, 107, 74, 0.3);
-}
-.char-cta:hover .char-cta-bubble::before {
+.char-cta-bubble::after {
   content: "Let's talk!";
   letter-spacing: 0.02em;
-  transform: translateY(0);
+  opacity: 0;
+  transition-delay: 0ms;
 }
-.char-cta:hover::after {
-  background: var(--moss);
+/* Baby variant wants to play, not chat. */
+.character.is-baby .char-cta-bubble::after { content: "Let's play!"; }
+
+/* Open state — widen the bubble leftward first; once the width
+   transition is over (~280 ms), cross-fade the text. */
+.character.is-open .char-cta-bubble {
+  min-width: 82px;
+  box-shadow: 0 3px 12px rgba(58, 107, 74, 0.34);
 }
+.character.is-open .char-cta-bubble::before { opacity: 0; transition-delay: 0ms; }
+.character.is-open .char-cta-bubble::after  { opacity: 1; transition-delay: 260ms; }
 
 /* ============ REVEAL ANIMATIONS ============ */
 
