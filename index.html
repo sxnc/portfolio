@@ -22,6 +22,19 @@
 </head>
 <body>
 
+  <!-- =================== INTRO SEQUENCE CURTAIN ===================
+       Full-viewport cream overlay that covers the page on load, shows
+       the birth year, cross-fades to the baby character, then lifts
+       away while the character scales down to its normal size.
+       Removed from the DOM after the sequence finishes.
+  ========================================================== -->
+  <div class="intro-sequence" id="intro-sequence" aria-hidden="true">
+    <span class="intro-year-big" id="intro-year-big">
+      <span class="intro-year-est">Est.</span>
+      <span class="intro-year-num">1986</span>
+    </span>
+  </div>
+
   <!-- =================== PAPER / GRAIN TEXTURE ===================
        Three stacked layers for depth:
        · fiber  — large-scale directional fibres (overlay)
@@ -302,7 +315,7 @@
     </article>
 
     <!-- 2019 · SRF PLAY Backend -->
-    <article class="event event-major event-left" data-parallax="0.08" data-skills="aws streaming-infra safe stakeholder reading">
+    <article class="event event-major event-left" data-parallax="0.08" data-skills="aws streaming-infra safe stakeholder reading cycling">
       <div class="event-mark"></div>
       <div class="event-year">Sep 2019</div>
       <div class="event-card">
@@ -375,7 +388,7 @@
       <div class="event-mark"></div>
       <div class="event-year">2018</div>
       <div class="event-card">
-        <span class="event-icon" aria-hidden="true"><i class="icofont-camera-alt" aria-hidden="true"></i></span>
+        <span class="event-icon" aria-hidden="true"><i class="icofont-film" aria-hidden="true"></i></span>
         <span class="event-kicker">First public video</span>
         <h3 class="event-title">"Summer Love"</h3>
         <p class="event-where">Zürich Film Festival · ZFF 2018</p>
@@ -500,7 +513,7 @@
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-graduate" aria-hidden="true"></i></span>
         <span class="event-kicker">EFZ Applikationsentwickler</span>
-        <h3 class="event-title">Minerva Schulen</h3>
+        <h3 class="event-title">Minerva IT College</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
           The classic Swiss IT apprenticeship: four years across
@@ -537,6 +550,12 @@
         </ul>
       </div>
     </article>
+
+    <!-- Bottom-of-timeline anchor — plain black dot, mirrors the "Today"
+         dot at the top. Marks the very start of the line (birth). -->
+    <div class="timeline-start" aria-hidden="true">
+      <span class="timeline-today-dot"></span>
+    </div>
 
   </main>
 
@@ -607,36 +626,20 @@
     <p class="char-intro-heading">Hi! I'm <em>Victor</em>.</p>
     <p>
       I'm a <em>producer</em>, <em>creator</em>, and <em>builder</em>
-      based in <em>Zürich, Switzerland</em>.
+      from <em>Zürich, Switzerland</em>.
     </p>
     <p>
-      I've been bridging <em>creative</em>, <em>technical</em>, and
-      <em>business</em> work for over eighteen years, with the latest
-      chapter being the productions I've been part of at
-      <strong>EVERYWOW</strong>.
-    </p>
-    <p>
-      I also run a <em>YouTube channel</em> where I ideate, write,
-      shoot, and edit videos, and with which I've amassed over 50k
-      subscribers. Take a look, or, as they say, Like &amp; Subscribe. ;)
-    </p>
-    <p>
-      If you want a detailed look at my path through time, scroll
-      down and turn the clock back on my journey. And if all of this
-      sounds like a fun person to you,
+      Take a scroll through my memory lane to check out my work, or
       <a class="char-intro-cta" href="mailto:victor.kuenzig@gmail.com">hit me up</a>
-      or connect with me on
-      <a class="char-intro-cta" href="https://www.linkedin.com/in/victorkuenzig/" target="_blank" rel="noopener">LinkedIn</a>.
+      directly, or connect on
+      <a class="char-intro-cta" href="https://www.linkedin.com/in/victor-kunzig/" target="_blank" rel="noopener">LinkedIn</a>!
     </p>
   </div>
 
   <!-- =================== FOOTER =================== -->
   <footer class="outro">
-    <p class="outro-copy">
-      © <span id="year">2026</span>
-      <span class="outro-sep">·</span>
-      Designed and Created by <em>Victor &amp; Claude</em>
-    </p>
+    <p class="outro-copy">Designed and Created by <em>Victor &amp; Claude</em></p>
+    <p class="outro-copy">© <span id="year">2026</span></p>
   </footer>
 
   <script src="main.js"></script>

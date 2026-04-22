@@ -24,26 +24,40 @@
 
   document.querySelectorAll('.reveal, .event').forEach(el => revealIO.observe(el));
 
-  /* ---------- 2. Counters ---------- */
+  /* ---------- 2. Counters ----------
+     Animate from 0 → target whenever the number enters the viewport,
+     regardless of scroll direction. Each run cancels its predecessor,
+     and the observer keeps observing (no unobserve) so scrolling back
+     up to the event re-fires the count. */
+  const counterAnims = new WeakMap();   // element → rAF id
+  const runCounter = (el) => {
+    const target   = parseFloat(el.dataset.countTo);
+    const decimals = parseInt(el.dataset.decimals || '0', 10);
+    const suffix   = el.dataset.suffix || '';
+    const duration = 1600;
+    const start    = performance.now();
+    cancelAnimationFrame(counterAnims.get(el) || 0);
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = (target * eased).toFixed(decimals) + suffix;
+      if (t < 1) counterAnims.set(el, requestAnimationFrame(tick));
+      else el.textContent = target.toFixed(decimals) + suffix;
+    };
+    counterAnims.set(el, requestAnimationFrame(tick));
+  };
   const counterIO = new IntersectionObserver((entries) => {
     for (const e of entries) {
-      if (!e.isIntersecting) continue;
-      const el = e.target;
-      const target = parseFloat(el.dataset.countTo);
-      const decimals = parseInt(el.dataset.decimals || '0', 10);
-      const suffix = el.dataset.suffix || '';
-      const duration = 1600;
-      const start = performance.now();
-
-      const tick = (now) => {
-        const t = Math.min(1, (now - start) / duration);
-        const eased = 1 - Math.pow(1 - t, 3);
-        el.textContent = (target * eased).toFixed(decimals) + suffix;
-        if (t < 1) requestAnimationFrame(tick);
-        else el.textContent = target.toFixed(decimals) + suffix;
-      };
-      requestAnimationFrame(tick);
-      counterIO.unobserve(el);
+      if (e.isIntersecting) {
+        runCounter(e.target);
+      } else {
+        // Reset to 0 when scrolled out so the re-entry animation is
+        // visibly a count-up (not a no-op).
+        cancelAnimationFrame(counterAnims.get(e.target) || 0);
+        const decimals = parseInt(e.target.dataset.decimals || '0', 10);
+        const suffix   = e.target.dataset.suffix || '';
+        e.target.textContent = (0).toFixed(decimals) + suffix;
+      }
     }
   }, { threshold: 0.6 });
 
@@ -111,9 +125,10 @@
     // each event that "introduced" them. The two baby hobbies are only
     // active while the character is in baby era (gated in main.js).
     'reading':          { name: 'Reading',          cat: 'hobby',  icon: 'read-book' },
-    'electric-guitar':  { name: 'Electric Guitar',  cat: 'hobby',  icon: 'guitar' },
-    'skateboarding':    { name: 'Skateboarding',    cat: 'hobby',  icon: 'skating' },
-    'video-games':      { name: 'Video Games',      cat: 'hobby',  icon: 'gamepad' },
+    'cycling':          { name: 'Cycling',          cat: 'hobby',  icon: 'bicycle-alt-1' },
+    'electric-guitar':  { name: 'Electric Guitar',  cat: 'hobby',  icon: 'music-alt' },
+    'skateboarding':    { name: 'Skateboarding',    cat: 'hobby',  icon: 'racings-wheel' },
+    'video-games':      { name: 'Video Games',      cat: 'hobby',  icon: 'game-controller' },
     'movies':           { name: 'Movies',           cat: 'hobby',  icon: 'movie' },
     'annoying-everyone':{ name: 'Annoying Everyone',cat: 'hobby',  icon: 'ghost',    baby: true },
     'lego-traps':       { name: 'Lego Traps',       cat: 'hobby',  icon: 'cubes',    baby: true },
@@ -214,6 +229,24 @@
     });
   };
 
+  /* Assign each *visible* skill a per-category `--i` index so the
+     cascade-in animation runs in reading order (top-down, left-right).
+     Without this, hidden (removed) skills leave gaps in the stagger
+     and later rows appear to animate out of order. */
+  const renumberVisibleSkills = () => {
+    const perCat = { tech: 0, people: 0, craft: 0, hobby: 0 };
+    // Iterate DOM order (which is SKILLS declaration order = grid order)
+    // rather than Map iteration, to be resilient to any future resort.
+    const grid = skillsGrid;
+    if (!grid) return;
+    for (const el of grid.children) {
+      if (el.classList.contains('is-removed')) continue;
+      const cat = el.dataset.cat;
+      if (!(cat in perCat)) continue;
+      el.style.setProperty('--i', perCat[cat]++);
+    }
+  };
+
   const updateCount = () => {
     if (!skillsCount) return;
     let n = 0;
@@ -225,6 +258,7 @@
     void skillsCount.offsetWidth;
     skillsCount.classList.add('bump');
     character?.classList.toggle('has-skills', n > 0);
+    renumberVisibleSkills();
     updateTabVisibility();
     animatePanelHeight();
   };
@@ -257,14 +291,28 @@
   const openPanel  = () => {
     clearTimeout(hideTimer);
     if (!character || character.classList.contains('is-open')) return;
-    character.classList.add('is-open');
-    // Opening the backpack in the hero stage is a video-game-style UI
-    // swap: the big "Hi..." speech bubble steps aside so the inventory
-    // has the spotlight.
-    if (character.classList.contains('intro-mode') && introBubble) {
-      introBubble.classList.add('is-hidden');
-      introBubble.style.setProperty('--intro-opacity', '0');
+    // No inventory in baby era.
+    if (character.classList.contains('is-baby')) return;
+    // Refresh per-category indices so the cascade-in animation on the
+    // char-skills follows the *current* visible grid order, not the
+    // order at panel-build time. Also strip any lingering just-added
+    // class (whose animation-delay uses --batch-i and would otherwise
+    // override the cascade ordering) and force a reflow so the browser
+    // restarts the animation cleanly every open.
+    renumberVisibleSkills();
+    if (skillsGrid) {
+      for (const el of skillsGrid.children) {
+        el.classList.remove('just-added');
+        el.style.animation = 'none';
+      }
+      void skillsGrid.offsetWidth;
+      for (const el of skillsGrid.children) {
+        el.style.animation = '';
+      }
     }
+    character.classList.add('is-open');
+    // Intro bubble stays visible alongside the backpack — the user
+    // wants both readable at once in the hero stage.
     // Auto-switch if the tab that was active is now empty (can happen
     // if the panel was opened after scrolling drained the category).
     updateTabVisibility();
@@ -280,10 +328,6 @@
       if (charHint  && charHint.matches(':hover'))  return;
       if (character && character.matches(':hover')) return;
       character?.classList.remove('is-open');
-      // Restore the intro bubble only if we're still in intro mode.
-      if (character && character.classList.contains('intro-mode') && introBubble) {
-        introBubble.classList.remove('is-hidden');
-      }
     }, base + grace);
   };
   if (character && charPanel) {
@@ -465,11 +509,13 @@
       mark.style.setProperty('--bend-offset', bendAt(my).toFixed(3) + 'px');
     }
 
-    // Moss trace: reveal the path from top down to viewport mid. y as
-    // arclength proxy (curve is near-vertical, a few px slack around
-    // the bulge is imperceptible).
+    // Moss trace: reveal the path from top down to the character's
+    // actual y (not the clamped peakY — otherwise the trace stops at
+    // h - APPROACH when scrolled all the way down). Arclength proxy
+    // uses y directly; the curve is near-vertical, so the few px of
+    // slack around the bulge are imperceptible.
     if (spineTrace) {
-      const visY = Math.max(0, Math.min(h, peakY));
+      const visY = Math.max(0, Math.min(h, charY));
       timeline.style.setProperty('--trace-len', visY.toFixed(3));
     }
   };
@@ -505,7 +551,7 @@
     const scale = INTRO_SCALE_MAX + (1 - INTRO_SCALE_MAX) * p;
     character.style.setProperty('--char-scale', scale.toFixed(3));
     character.classList.toggle('intro-mode', p < 0.55);
-    if (introBubble && !character.classList.contains('is-open')) {
+    if (introBubble) {
       const op = Math.max(0, 1 - p * 1.4);
       introBubble.style.setProperty('--intro-opacity', op.toFixed(3));
       introBubble.classList.toggle('is-hidden', op <= 0.02);
@@ -517,14 +563,13 @@
   };
 
   /* Time-of-day classification for the hero sky. Pulled from the
-     user's local clock: night → dawn → day → dusk. The #sky element's
-     data-time attr drives the sun/moon/cloud/star visibility in CSS. */
+     user's local clock. Just two buckets (day/night) — the sky is
+     outline line art with no colour wash, so dawn/dusk don't need
+     their own visual. The #sky element's data-time attr drives
+     sun/moon/cloud/star visibility in CSS. */
   const classifyTime = () => {
     const h = new Date().getHours();
-    if (h >= 6  && h < 9)  return 'dawn';
-    if (h >= 9  && h < 18) return 'day';
-    if (h >= 18 && h < 21) return 'dusk';
-    return 'night';
+    return (h >= 7 && h < 20) ? 'day' : 'night';
   };
   if (skyEl) {
     skyEl.dataset.time = classifyTime();
@@ -586,6 +631,11 @@
     const isYoung = summerPassed && !isBaby;
     character.classList.toggle('is-baby',  isBaby);
     character.classList.toggle('is-young', isYoung);
+    // Baby has no inventory — force the panel closed if the era
+    // change catches it open.
+    if (isBaby && character.classList.contains('is-open')) {
+      character.classList.remove('is-open');
+    }
 
     const newLevel = isBaby ? 0 : isYoung ? 1 : 2;
     if (bootedEra && inside && newLevel > prevLevel) {
@@ -756,10 +806,18 @@
   const updateBabyHobbies = (animate) => {
     if (!babySource) return;
     const mid = window.innerHeight * 0.5;
-    // Gate = school gate if present, else baby source.
-    const gateEl = schoolGateEl || babySource;
-    const gRect = gateEl.getBoundingClientRect();
-    const ec = gRect.top + gRect.height * 0.5;
+    // Gate = midpoint between Born and Minerva (same point the
+    // character's baby→teen flip uses), so baby hobbies vanish at
+    // exactly the moment the teen variant appears.
+    let ec;
+    if (schoolGateEl) {
+      const bR = babySource.getBoundingClientRect();
+      const sR = schoolGateEl.getBoundingClientRect();
+      ec = ((bR.top + bR.height * 0.5) + (sR.top + sR.height * 0.5)) * 0.5;
+    } else {
+      const bR = babySource.getBoundingClientRect();
+      ec = bR.top + bR.height * 0.5;
+    }
     const gatePassed = ec < mid - HY;   // we're past the gate going "back in time"
 
     for (const id of babyHobbyIds) {
@@ -875,4 +933,127 @@
   /* ---------- Footer year auto-updates ---------- */
   const yearEl = document.getElementById('year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
+
+  /* ---------- Intro cinematic ----------
+     Four phases on first load:
+       A. 1986 text alone on a cream curtain         (~1.2 s)
+       B. Year fades out, baby character fades in    (~0.9 s)
+       C. Curtain fades away, baby scales 2.8x → 1x  (~1.0 s)
+       D. Auto-scroll from bottom → top              (~10 s, easeInOut)
+     Any wheel / touch / keydown / mousedown in phase D cancels the
+     auto-scroll and hands control back to the user. Reduced motion
+     skips the whole thing.
+  ------------------------------------------------- */
+  const introCurtain = document.getElementById('intro-sequence');
+  const introYearBig = document.getElementById('intro-year-big');
+  const sleep        = (ms) => new Promise(r => setTimeout(r, ms));
+
+  const setScroll = (y) => window.scrollTo({ top: y, left: 0, behavior: 'instant' });
+
+  const startAutoScroll = () => {
+    const startY = window.scrollY;
+    const endY   = 0;
+    // Hide the intro bubble immediately so it can't flicker in during
+    // the scroll (we manually reveal it when the scroll finishes).
+    introBubble?.classList.add('is-intro-held');
+    if (startY <= endY + 4) {
+      revealIntroBubble();
+      return;
+    }
+    const duration = 12000;
+    const start = performance.now();
+    let cancelled = false;
+
+    const cancel = () => {
+      if (cancelled) return;
+      cancelled = true;
+      cleanup();
+      revealIntroBubble();
+    };
+    const cleanup = () => {
+      window.removeEventListener('wheel',      cancel, { passive: true });
+      window.removeEventListener('touchstart', cancel, { passive: true });
+      window.removeEventListener('keydown',    cancel);
+      window.removeEventListener('mousedown',  cancel);
+    };
+    window.addEventListener('wheel',      cancel, { passive: true });
+    window.addEventListener('touchstart', cancel, { passive: true });
+    window.addEventListener('keydown',    cancel);
+    window.addEventListener('mousedown',  cancel);
+
+    const ease = (t) => (t < 0.5) ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+
+    const tick = (now) => {
+      if (cancelled) return;
+      const t = Math.min(1, (now - start) / duration);
+      const p = ease(t);
+      setScroll(Math.round(startY + (endY - startY) * p));
+      if (t < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        cleanup();
+        revealIntroBubble();
+      }
+    };
+    requestAnimationFrame(tick);
+  };
+
+  /* Unlocks the intro speech bubble with a little pop after the
+     auto-scroll lands at the top (or after the user cancels it). */
+  const revealIntroBubble = () => {
+    if (!introBubble) return;
+    introBubble.classList.remove('is-intro-held');
+    introBubble.classList.add('is-intro-revealed');
+    // Scroll-driven opacity can keep it visible from here on.
+    onScroll();
+  };
+
+  const playIntro = async () => {
+    if (!introCurtain) return;
+    if (reduceMotion) {
+      introCurtain.remove();
+      return;
+    }
+
+    document.body.classList.add('playing-intro');
+
+    // Kill any browser scroll restoration so the page actually starts
+    // at the bottom on refresh.
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+    // Instant jump to the bottom so era detection places the baby.
+    // Wait one frame so layout is measured before we scroll.
+    await new Promise(r => requestAnimationFrame(r));
+    setScroll(document.documentElement.scrollHeight);
+    // Re-run scroll-driven updates immediately.
+    onScroll();
+
+    // Phase A: year alone on the curtain.
+    await sleep(1200);
+
+    // Phase B: year fades out, character fades in (big, baby variant).
+    introYearBig?.classList.add('is-gone');
+    document.body.classList.add('intro-phase-show');
+    await sleep(900);
+
+    // Phase C: curtain fades away, character scales 2.8 → 1.
+    introCurtain.classList.add('is-gone');
+    document.body.classList.add('intro-phase-zoom');
+    await sleep(1000);
+
+    // Hand off: remove all intro classes so normal scroll-driven
+    // scale / opacity kick in. Remove the curtain from the DOM.
+    document.body.classList.remove('playing-intro', 'intro-phase-show', 'intro-phase-zoom');
+    introCurtain.remove();
+
+    // Let the scroll handler reassert scroll-linked character scale,
+    // then kick the auto-scroll immediately (no pause).
+    onScroll();
+    startAutoScroll();
+  };
+
+  // Kick off after layout settles. document.fonts.ready also gates the
+  // measurement calls above, but the intro curtain covers anything
+  // that isn't measured yet.
+  requestAnimationFrame(() => { playIntro(); });
 })();

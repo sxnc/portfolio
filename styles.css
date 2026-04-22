@@ -63,6 +63,94 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 
 ::selection { background: var(--moss); color: var(--paper); }
 
+/* ============ INTRO SEQUENCE ============
+   Full-viewport cream curtain that plays on first load. Sits above
+   everything (z-index 110) until the JS orchestrator fades it away.
+   The big birth-year text lives on the curtain; the walking character
+   sits on z-index 120 so it shows THROUGH the curtain once the
+   .intro-phase-show class appears.
+--------------------------------------------- */
+.intro-sequence {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: var(--cream);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transition: opacity 900ms var(--ease);
+}
+.intro-sequence.is-gone {
+  opacity: 0;
+  pointer-events: none;
+}
+.intro-year-big {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--f-serif);
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.03em;
+  line-height: 1;
+  transition: opacity 700ms var(--ease), transform 900ms var(--ease);
+  will-change: opacity, transform;
+}
+.intro-year-est {
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(18px, 2.4vw, 32px);
+  letter-spacing: 0.14em;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+}
+.intro-year-num {
+  font-size: clamp(88px, 17vw, 220px);
+  line-height: 1;
+}
+.intro-year-big.is-gone {
+  opacity: 0;
+  transform: scale(0.94) translateY(-10px);
+}
+
+/* While the intro plays, the character is forced to baby scale and
+   lifted above the curtain. Everything else (CTAs, intro bubble, sky,
+   hint dot) is hidden so the stage is just the character. */
+body.playing-intro .character {
+  z-index: 120;
+  opacity: 0;
+  transition: transform 950ms cubic-bezier(0.34, 1.2, 0.5, 1), opacity 600ms var(--ease);
+}
+body.playing-intro .character {
+  --char-scale: 2.5 !important;
+}
+body.playing-intro.intro-phase-show .character {
+  opacity: 1;
+}
+body.playing-intro.intro-phase-zoom .character {
+  --char-scale: 1 !important;
+}
+body.playing-intro .char-cta,
+body.playing-intro .char-hint,
+body.playing-intro .char-skills,
+body.playing-intro .char-intro-bubble,
+body.playing-intro .sky,
+body.playing-intro .paper-fiber,
+body.playing-intro .paper-mottle,
+body.playing-intro .grain {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity 600ms var(--ease) !important;
+}
+
+/* Reduced motion: skip the whole show, remove the curtain instantly. */
+@media (prefers-reduced-motion: reduce) {
+  .intro-sequence { display: none; }
+}
+
 /* ============ PAGE-WIDE TEXTURE ============
    Three stacked layers to make the page feel like
    slightly-aged paper pulled from a production binder.
@@ -119,11 +207,11 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 }
 
 /* ============ SKY / TIME-OF-DAY BACKDROP ============
-   A decorative fixed-position sky behind the big hero character.
-   Day: warm peach wash + sun + drifting clouds.
-   Night: indigo wash + moon + twinkling stars.
-   The active mode is set on the parent <div id="sky"> by main.js,
-   based on the user's local hour.
+   Ink-on-paper line art, no colour wash. Day mode shows a simple sun
+   outline plus a couple of drifting clouds. Night mode replaces them
+   with a waning-crescent moon outline and twinkling stars. The parent
+   <div id="sky"> carries the active mode in data-time, driven from the
+   user's local clock in main.js.
 ---------------------------------------------------------- */
 .sky {
   position: fixed;
@@ -131,146 +219,116 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
+  color: var(--ink);
   opacity: var(--sky-opacity, 1);
   transition: opacity 420ms var(--ease);
 }
-.sky-bg {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(ellipse 70% 55% at 50% 20%, rgba(255, 208, 140, 0.35), transparent 70%),
-    linear-gradient(to bottom, rgba(255, 220, 170, 0.45), rgba(243, 237, 224, 0) 60%);
-  transition: background 1200ms var(--ease);
-}
-.sky[data-time="night"] .sky-bg {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 18%, rgba(80, 90, 160, 0.35), transparent 72%),
-    linear-gradient(to bottom, rgba(50, 55, 100, 0.45), rgba(243, 237, 224, 0) 65%);
-}
-.sky[data-time="dusk"] .sky-bg {
-  background:
-    radial-gradient(ellipse 80% 60% at 60% 24%, rgba(240, 140, 110, 0.40), transparent 72%),
-    radial-gradient(ellipse 80% 60% at 35% 30%, rgba(130, 100, 160, 0.30), transparent 72%),
-    linear-gradient(to bottom, rgba(200, 130, 130, 0.38), rgba(243, 237, 224, 0) 65%);
-}
-.sky[data-time="dawn"] .sky-bg {
-  background:
-    radial-gradient(ellipse 80% 60% at 30% 24%, rgba(255, 170, 120, 0.38), transparent 72%),
-    linear-gradient(to bottom, rgba(255, 180, 150, 0.38), rgba(243, 237, 224, 0) 65%);
-}
+.sky-bg { display: none; }           /* no colour wash at all */
 
-/* Sun — drifts slowly across the upper third */
+/* Sun — plain circle outline. Clean line-art, nothing decorative. */
 .sky-sun {
   position: absolute;
-  top: 18%;
-  left: 72%;
-  width: 88px;
-  height: 88px;
+  top: 16%;
+  left: 74%;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 38%, #ffe2a8 0%, #ffc16a 55%, #ff9a48 100%);
-  box-shadow:
-    0 0 30px rgba(255, 180, 100, 0.55),
-    0 0 60px rgba(255, 180, 100, 0.35),
-    0 0 120px rgba(255, 180, 100, 0.2);
+  border: 1.8px solid currentColor;
+  background: transparent;
   opacity: 0;
-  transform: translateY(0);
   animation: sunFloat 22s ease-in-out infinite;
   transition: opacity 1200ms var(--ease);
 }
-.sky[data-time="day"]  .sky-sun { opacity: 1; }
-.sky[data-time="dawn"] .sky-sun { opacity: 0.75; top: 40%; }
-.sky[data-time="dusk"] .sky-sun { opacity: 0.7;  top: 38%; left: 22%; background: radial-gradient(circle at 38% 38%, #ffd4a6 0%, #ff9f68 55%, #d8643f 100%); }
+.sky[data-time="day"] .sky-sun { opacity: 0.75; }
 @keyframes sunFloat {
-  0%,100% { transform: translateY(0) translateX(0); }
-  50%     { transform: translateY(-12px) translateX(-8px); }
+  0%,100% { transform: translateY(0); }
+  50%     { transform: translateY(-10px); }
 }
 
-/* Moon — crescent feel via inner shadow + craters */
+/* Moon — waning crescent built by offsetting a masking circle so one
+   side of the outline ring is eaten away. Pure outline, no fill. */
 .sky-moon {
   position: absolute;
-  top: 16%;
+  top: 14%;
   left: 22%;
-  width: 76px;
-  height: 76px;
+  width: 62px;
+  height: 62px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 32%, #fdf6e1 0%, #eadfb6 50%, #c7b985 100%);
-  box-shadow:
-    inset -10px -6px 20px rgba(90, 70, 30, 0.18),
-    0 0 24px rgba(240, 220, 160, 0.4),
-    0 0 60px rgba(200, 180, 130, 0.25);
+  border: 1.8px solid currentColor;
+  background: transparent;
   opacity: 0;
   animation: moonFloat 28s ease-in-out infinite;
   transition: opacity 1200ms var(--ease);
+  /* Waning crescent: mask out the right side so only the left sliver
+     of the circle's outline remains. */
+  -webkit-mask: radial-gradient(circle at 140% 50%, transparent 58%, #000 58.5%);
+          mask: radial-gradient(circle at 140% 50%, transparent 58%, #000 58.5%);
 }
-.sky[data-time="night"] .sky-moon { opacity: 1; }
-.sky[data-time="dusk"]  .sky-moon { opacity: 0.6; }
-.sky[data-time="dawn"]  .sky-moon { opacity: 0.3; }
-.sky-crater {
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(140, 120, 80, 0.25);
-}
-.sky-crater-1 { width: 14px; height: 14px; top: 30%; left: 58%; }
-.sky-crater-2 { width:  9px; height:  9px; top: 58%; left: 30%; }
-.sky-crater-3 { width:  6px; height:  6px; top: 22%; left: 34%; }
+.sky[data-time="night"] .sky-moon { opacity: 0.85; }
+/* The craters are just noise in outline mode — hide them entirely. */
+.sky-crater { display: none; }
 @keyframes moonFloat {
   0%,100% { transform: translateY(0); }
-  50%     { transform: translateY(-8px); }
+  50%     { transform: translateY(-6px); }
 }
 
-/* Stars — twinkle via opacity keyframes */
+/* Stars — small hollow dots that softly twinkle. No glow. */
 .sky-star {
   position: absolute;
-  width: 3px;
-  height: 3px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background: rgba(255, 245, 220, 0.95);
-  box-shadow: 0 0 6px rgba(255, 245, 220, 0.8);
+  background: currentColor;
   opacity: 0;
-  animation: starTwinkle 4s ease-in-out infinite;
+  animation: starTwinkle 4.2s ease-in-out infinite;
 }
-.sky[data-time="night"] .sky-star { opacity: 1; }
-.sky[data-time="dusk"]  .sky-star { opacity: 0.6; }
-.sky-star-1 { top: 18%; left: 14%; animation-delay: 0s;   }
+.sky[data-time="night"] .sky-star { opacity: 0.7; }
+.sky-star-1 { top: 18%; left: 14%; animation-delay: 0s;   width: 3px; height: 3px; }
 .sky-star-2 { top: 12%; left: 38%; animation-delay: 0.8s; width: 2px; height: 2px; }
-.sky-star-3 { top: 26%; left: 62%; animation-delay: 1.6s; }
+.sky-star-3 { top: 26%; left: 62%; animation-delay: 1.6s; width: 4px; height: 4px; }
 .sky-star-4 { top: 32%; left: 82%; animation-delay: 2.2s; width: 2px; height: 2px; }
-.sky-star-5 { top: 8%;  left: 72%; animation-delay: 0.4s; width: 2px; height: 2px; }
-.sky-star-6 { top: 22%; left: 48%; animation-delay: 3s;   }
+.sky-star-5 { top: 8%;  left: 72%; animation-delay: 0.4s; width: 3px; height: 3px; }
+.sky-star-6 { top: 22%; left: 48%; animation-delay: 3s;   width: 2px; height: 2px; }
 @keyframes starTwinkle {
-  0%,100% { opacity: 0.3; transform: scale(0.9); }
-  50%     { opacity: 1;   transform: scale(1.15); }
+  0%,100% { opacity: 0.25; transform: scale(0.9); }
+  50%     { opacity: 0.85; transform: scale(1.1); }
 }
 
-/* Clouds — soft blobs drifting horizontally across the day sky */
+/* Clouds — outline-only, drifting horizontally. Built from three
+   circular border-only blobs overlapped via box-shadow clones. */
 .sky-cloud {
   position: absolute;
-  background: rgba(253, 250, 240, 0.7);
-  border-radius: 100px;
-  box-shadow:
-    20px -6px 0 -4px rgba(253, 250, 240, 0.65),
-    -18px -4px 0 -6px rgba(253, 250, 240, 0.6);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.6px solid currentColor;
+  background: transparent;
   opacity: 0;
   animation: cloudDrift 60s linear infinite;
   transition: opacity 1200ms var(--ease);
-  filter: blur(0.5px);
 }
-.sky[data-time="day"]  .sky-cloud { opacity: 1; }
-.sky[data-time="dawn"] .sky-cloud { opacity: 0.7; }
-.sky[data-time="dusk"] .sky-cloud { opacity: 0.55; }
-.sky-cloud-1 { top: 22%; width: 80px; height: 20px; animation-duration: 70s; }
-.sky-cloud-2 { top: 38%; width: 110px; height: 24px; animation-duration: 90s; animation-delay: -20s; }
-.sky-cloud-3 { top: 14%; width: 60px; height: 16px; animation-duration: 55s; animation-delay: -40s; }
+.sky-cloud::before,
+.sky-cloud::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 1.6px solid currentColor;
+  background: var(--cream);  /* covers the overlapping lines so the silhouette reads as one shape */
+}
+.sky-cloud::before { width: 28px; height: 28px; top: -8px; left:  12px; }
+.sky-cloud::after  { width: 20px; height: 20px; top: -2px; left:  32px; }
+.sky[data-time="day"] .sky-cloud { opacity: 0.55; }
+.sky-cloud-1 { top: 24%; left: 20%; animation-duration: 80s; }
+.sky-cloud-2 { top: 16%; left: 50%; animation-duration: 120s; animation-delay: -30s; }
+.sky-cloud-3 { top: 34%; left: 68%; animation-duration: 95s;  animation-delay: -60s; }
 @keyframes cloudDrift {
-  0%   { transform: translateX(-160px); }
-  100% { transform: translateX(calc(100vw + 160px)); }
+  0%   { transform: translateX(-120px); }
+  100% { transform: translateX(calc(100vw + 120px)); }
 }
-
-/* Sky fades out as the user scrolls into the timeline (driven by
-   --sky-opacity set in main.js alongside the intro scale). */
 
 @media (prefers-reduced-motion: reduce) {
   .sky-sun, .sky-moon, .sky-cloud, .sky-star { animation: none !important; }
+  .sky-sun::before { animation: none !important; }
 }
 
 /* Speech bubble above the enlarged character. Fixed-positioned so it
@@ -279,12 +337,18 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
    rounded corners, soft shadow, no coloured border. */
 .char-intro-bubble {
   position: fixed;
-  top: calc(50% - 170px);
+  /* Anchor to the character's face (viewport centre) and pin the
+     bubble's BOTTOM just above it. The bubble grows upward, so longer
+     copy just extends higher without ever getting clipped past the
+     top of the viewport. */
+  bottom: calc(50% + 170px);
+  top: auto;
   left: 50%;
-  transform: translate(-50%, -100%);
+  transform: translateX(-50%) scale(1);
+  transform-origin: 50% 100%;        /* pop-in grows from the tail */
   z-index: 72;
-  width: min(540px, 90vw);
-  padding: 22px 28px 20px;
+  width: min(520px, 90vw);
+  padding: 18px 24px 16px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -293,16 +357,26 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
     0 2px 6px rgba(22, 22, 21, 0.08);
   text-align: left;
   font-family: var(--f-sans);
-  font-size: 14px;
-  line-height: 1.55;
+  font-size: 13px;
+  line-height: 1.5;
   color: var(--ink-body);
   opacity: var(--intro-opacity, 1);
-  transition: opacity 320ms var(--ease);
+  transition:
+    opacity   460ms var(--ease),
+    transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
   pointer-events: auto;
 }
-/* Downward tail pointing at the character's mouth below — two stacked
-   triangles so the subtle `--line` border on the bubble is continued
-   along the tail's sides. */
+/* Held hidden during the intro auto-scroll; revealed (via simple
+   class removal) when the scroll lands at the top. Snap-to-hidden so
+   there's no fade, then the normal transition handles the pop-in. */
+.char-intro-bubble.is-intro-held {
+  opacity: 0 !important;
+  transform: translateX(-50%) scale(0.55);
+  pointer-events: none;
+  transition: none !important;
+}
+/* Downward tail — two stacked triangles so the subtle --line border
+   on the bubble is continued along the tail's sides. */
 .char-intro-bubble::before,
 .char-intro-bubble::after {
   content: "";
@@ -327,7 +401,7 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 .char-intro-bubble.is-hidden {
   pointer-events: none;
 }
-.char-intro-bubble > p       { margin-bottom: 10px; }
+.char-intro-bubble > p       { margin-bottom: 8px; }
 .char-intro-bubble > p:last-child { margin-bottom: 0; }
 .char-intro-bubble strong    { font-weight: 600; color: var(--ink); }
 /* Serif italic highlights match the existing event-card `<em>` idiom —
@@ -342,11 +416,11 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 .char-intro-heading {
   font-family: var(--f-serif);
   font-weight: 500;
-  font-size: clamp(24px, 2.6vw, 32px);
+  font-size: clamp(20px, 2.2vw, 26px);
   line-height: 1.15;
   letter-spacing: -0.01em;
   color: var(--ink);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .char-intro-heading em { color: var(--moss); font-size: 1em; }
 
@@ -395,12 +469,14 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   pointer-events: none;
 }
 .timeline-today-dot {
+  display: inline-block;            /* inline <span> would collapse to 0 × 0 */
   width: 12px;
   height: 12px;
   background: var(--ink);
   border: 3px solid var(--cream);
   border-radius: 50%;
   box-shadow: 0 0 0 1px var(--line);
+  box-sizing: content-box;
 }
 .timeline-today-label {
   font-family: var(--f-serif);
@@ -410,6 +486,16 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   color: var(--ink-muted);
   background: var(--cream);
   padding: 1px 7px;
+}
+/* Matching dot at the very bottom of the timeline — birth terminator,
+   no label. Uses the same visual as the "Today" dot above. */
+.timeline-start {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  pointer-events: none;
 }
 
 /* Bending spine — an SVG path recomputed per scroll frame in main.js.
@@ -456,6 +542,9 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   --s-abs: 0;   /* abs(--s) */
   --side: 0;    /* card drift direction: -1 left, 1 right */
   --speed: 24px;
+  /* Horizontal drift shared by the card and year label so they scroll
+     as one unit. */
+  --drift: calc(var(--side) * var(--s-abs) * 14px);
   transform: translate3d(0, calc(var(--s) * var(--speed) * -1), 0);
   will-change: transform, opacity;
 }
@@ -513,43 +602,13 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   /* Alignment inherits from --mark-align (title-centred), set by JS. */
 }
 
-/* Connector line from each dot toward its event card. Animated from
-   the event inward toward the spine (draws outward → inward). When the
-   event is centred on the character (.is-active), the line is fully
-   drawn; otherwise it retracts toward the card. */
-.event {
-  --line-factor: max(0, calc((0.5 - var(--s-abs, 1)) * 2));
-}
-.event.is-active { --line-factor: 1; }
-.event-mark::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  margin-top: -0.5px;
-  height: 1px;
-  width: 54px;
-  background: var(--line-strong);
-  pointer-events: none;
-  opacity: calc(var(--line-factor, 0) * 0.9);
-  transition: opacity 220ms var(--ease);
-}
-.event-left  .event-mark::after {
-  right: calc(100% + 4px);
-  transform-origin: left center;       /* grow from the card toward the spine */
-  transform: scaleX(var(--line-factor, 0));
-  transition: transform 360ms var(--ease), opacity 220ms var(--ease);
-}
-.event-right .event-mark::after {
-  left: calc(100% + 4px);
-  transform-origin: right center;      /* grow from the card toward the spine */
-  transform: scaleX(var(--line-factor, 0));
-  transition: transform 360ms var(--ease), opacity 220ms var(--ease);
-}
-.event-center .event-mark::after,
-.event-now    .event-mark::after { display: none; }
+/* No connector line from the spine to the card — the bending spine
+   itself points at whichever event is centred, so any extra line
+   just adds visual noise. */
 
 /* Year label — sits above its event card, on the same side of the
-   timeline as the card. Spine stays clean; year stays readable. */
+   timeline as the card. Matches the card's scroll transform so they
+   move as a single unit (no "floating year" effect). */
 .event-year {
   grid-row: 1;
   font-family: var(--f-serif);
@@ -559,13 +618,13 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   margin-bottom: 6px;
   letter-spacing: 0.02em;
   white-space: nowrap;
-  transform: translateY(calc(var(--s) * -4px));
-  transition: color 300ms var(--ease);
+  transform: translate3d(var(--drift, 0), calc(var(--s) * -8px), 0);
+  transition: color 300ms var(--ease), transform 160ms linear;
 }
 .event-left  .event-year {
   grid-column: 1;
-  justify-self: start;
-  padding-left: clamp(20px, 4vw, 56px);
+  justify-self: end;
+  padding-right: clamp(20px, 4vw, 56px);
 }
 .event-right .event-year {
   grid-column: 3;
@@ -583,12 +642,12 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 }
 
 /* Cards — branch left or right. Card sits in row 2 (the year label is
-   in row 1 above it). */
+   in row 1 above it). --drift is declared on .event so year + card
+   share the same horizontal wobble. */
 .event-card {
   grid-row: 2;
   padding: 4px 0;
   position: relative;
-  --drift: calc(var(--side) * var(--s-abs) * 14px);
   transform:
     translate3d(var(--drift), calc(var(--s) * -8px), 0)
     scale(calc(1 - var(--s-abs) * 0.03));
@@ -598,8 +657,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 .event-left  { --side: -1; }
 .event-right { --side:  1; }
 
-.event-left .event-card  { grid-column: 1; text-align: left; padding-right: clamp(20px, 4vw, 56px); padding-left: clamp(20px, 4vw, 56px); }
-.event-right .event-card { grid-column: 3; text-align: left; padding-left:  clamp(20px, 4vw, 56px); padding-right: clamp(20px, 4vw, 56px); }
+.event-left .event-card  { grid-column: 1; text-align: right; padding-right: clamp(20px, 4vw, 56px); }
+.event-right .event-card { grid-column: 3; text-align: left;  padding-left:  clamp(20px, 4vw, 56px); }
 
 .event-center .event-card {
   grid-column: 1 / -1;
@@ -645,9 +704,9 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 }
 .event-major .event-icon { width: 48px; height: 48px; }
 .event-major .event-icon i { font-size: 24px; }
-/* All icons now align to the left of their card (card text is also
-   left-aligned regardless of the card's side of the timeline). */
-.event-left  .event-icon,
+/* Icons align to the card's text edge (right for event-left, left for
+   event-right), matching the asymmetric card text alignment. */
+.event-left  .event-icon { margin-left: auto;  margin-right: 0; }
 .event-right .event-icon { margin-right: auto; margin-left: 0; }
 /* Right-side events now carry a moss-tinted icon (creative track) while
    left-side events keep the neutral paper icon (professional track). */
@@ -697,8 +756,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   max-width: 42ch;
   transform: translateY(calc(var(--s) * -4px));
 }
-.event-left .event-desc,
-.event-right .event-desc { margin-left: 0; margin-right: auto; }
+.event-left  .event-desc { margin-left: auto;  margin-right: 0; }
+.event-right .event-desc { margin-right: auto; margin-left: 0; }
 
 .event-brief {
   font-size: 15px;
@@ -708,8 +767,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   transform: translateY(calc(var(--s) * -4px));
 }
 .event-brief strong { color: var(--ink); font-weight: 600; }
-.event-left  .event-brief,
-.event-right .event-brief { margin-left: 0; margin-right: auto; }
+.event-left  .event-brief { margin-left: auto;  margin-right: 0; }
+.event-right .event-brief { margin-right: auto; margin-left: 0; }
 
 /* Stats block — supports single or pair */
 .event-stats {
@@ -717,8 +776,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   gap: 12px;
   margin-bottom: 18px;
 }
-.event-left  .event-stats,
-.event-right .event-stats { justify-content: flex-start; margin-left: 0; margin-right: auto; }
+.event-left  .event-stats { justify-content: flex-end;   margin-left: auto;  margin-right: 0; }
+.event-right .event-stats { justify-content: flex-start; margin-right: auto; margin-left: 0; }
 
 .event-stat {
   display: inline-flex;
@@ -732,7 +791,7 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   transform: translateY(calc(var(--s) * -3px));
 }
 .event-stats .event-stat { margin-bottom: 0; }
-.event-left  .event-stat,
+.event-left  .event-stat { align-items: flex-end; }
 .event-right .event-stat { align-items: flex-start; }
 .event-stat-num {
   font-family: var(--f-serif);
@@ -759,7 +818,7 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   max-width: 42ch;
   transform: translateY(calc(var(--s) * -2px));
 }
-.event-left  .event-tags,
+.event-left  .event-tags { justify-content: flex-end; }
 .event-right .event-tags { justify-content: flex-start; }
 .event-tags li {
   font-size: 11px;
@@ -919,15 +978,20 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   opacity: 1;
   pointer-events: auto;
 }
-/* While the character is scaled up (intro mode), keep the CTA and
-   panel overlays quiet — but the char-hint green dot stays on so the
-   user can still open the backpack from the hero stage. Opening it
-   there dismisses the intro speech bubble (handled in main.js). */
+/* When the backpack opens, the character's stacking context jumps
+   above the intro bubble (z-index 72) so the panel isn't occluded. */
+.character.is-open { z-index: 90; }
+/* Intro mode: hide the CTA bubble (the big intro speech bubble takes
+   over that role) and hide the backpack *unless it's actually open*.
+   Opening the backpack in the hero stage should still reveal the
+   panel — the intro speech bubble hides out of the way in main.js. */
 .character.intro-mode .char-cta,
-.character.intro-mode .char-skills {
+.character.intro-mode:not(.is-open) .char-skills {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+/* Panel counter-scale is now applied at all times via the base
+   .char-skills rule (see above), so no intro-mode special case. */
 /* Intro-mode: keep the hint dot visible but un-scale it so the scaled
    character transform doesn't inflate it past readability. */
 .character.intro-mode .char-hint {
@@ -937,6 +1001,16 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 .character.intro-mode .char-hint:hover {
   transform: translate(0, -50%) scale(calc(1.15 / var(--char-scale, 1)));
 }
+
+/* Baby era: no backpack interaction at all. Hide the hint dot and
+   disable hover on the character + any overlays. */
+.character.is-baby .char-hint,
+.character.is-baby .char-cta,
+.character.is-baby .char-skills {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.character.is-baby { cursor: default; }
 
 .char-art-wrap {
   position: relative;
@@ -950,7 +1024,9 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
    silhouette exactly rather than the video's rectangular frame. */
 
 /* Subtle elliptical shadow under the feet that pulses with step cadence
-   (the videos are ~0.55s per step — shadow syncs approximately). */
+   (the videos are ~0.55s per step — shadow syncs approximately).
+   Baby variant is in a crib, not walking, so the shadow is hidden
+   entirely while the baby art is on screen. */
 .char-art-wrap::after {
   content: "";
   position: absolute;
@@ -963,6 +1039,14 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   animation: charShadow 1.1s ease-in-out infinite;
   pointer-events: none;
   z-index: -1;
+}
+/* Baby is in a crib — keep the shadow visible but pause the step
+   pulse (no walking cadence under a sleeping baby). Teen and adult
+   re-animate normally. */
+.character.is-baby .char-art-wrap::after {
+  animation: none;
+  opacity: 0.85;
+  transform: translateX(-50%) scaleX(1);
 }
 @keyframes charShadow {
   0%,50%,100% { opacity: 0.85; transform: translateX(-50%) scaleX(1); }
@@ -1111,10 +1195,18 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 
 .char-skills {
   position: absolute;
-  top: 50%;
+  /* Anchor to the character's top-left of the bag area (backpack is
+     roughly vertically centred on the character's torso). Using a
+     TOP anchor with no -50% translate means the panel grows downward
+     as skills come and go, keeping the header pinned in place. */
+  top: 20%;
   left: calc(100% + 18px);
-  transform-origin: left center;
-  transform: translate(-14px, -50%) scale(0.25) rotate(-10deg);
+  transform-origin: top left;
+  /* Counter-scale always — the character's transform scales from 2.2
+     at hero to 1 in the timeline, and without this the panel would
+     resize alongside the character as the user scrolls through the
+     intro zone. */
+  transform: translateX(-14px) scale(calc(0.25 / var(--char-scale, 1))) rotate(-10deg);
   opacity: 0;
   pointer-events: none;
   width: 280px;
@@ -1134,7 +1226,7 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   z-index: 80;
 }
 .character.is-open .char-skills {
-  transform: translate(0, -50%) scale(1) rotate(0);
+  transform: translateX(0) scale(calc(1 / var(--char-scale, 1))) rotate(0);
   opacity: 1;
   pointer-events: auto;
 }
@@ -1413,15 +1505,16 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
 @media (max-width: 900px) {
   .character { width: 70px; height: 105px; }
   .char-skills {
+    top: 20%;
     left: auto;
     right: calc(100% + 16px);
-    transform-origin: right center;
-    transform: translate(14px, -50%) scale(0.25) rotate(10deg);
+    transform-origin: top right;
+    transform: translateX(14px) scale(calc(0.25 / var(--char-scale, 1))) rotate(10deg);
     width: 240px;
     max-width: 260px;
   }
   .character.is-open .char-skills {
-    transform: translate(0, -50%) scale(1) rotate(0);
+    transform: translateX(0) scale(calc(1 / var(--char-scale, 1))) rotate(0);
   }
 
   /* Bubble shrinks proportionally (0.795×) to keep the same visual
@@ -1566,8 +1659,8 @@ em { font-style: italic; font-family: var(--f-serif); font-weight: 400; }
   opacity: 0;
   transition-delay: 0ms;
 }
-/* Baby variant wants to play, not chat. */
-.character.is-baby .char-cta-bubble::after { content: "Let's play!"; }
+/* Baby variant has its own caption. */
+.character.is-baby .char-cta-bubble::after { content: "I'm a baby!"; }
 
 /* Open state — widen the bubble leftward first; once the width
    transition is over (~280 ms), cross-fade the text. */
