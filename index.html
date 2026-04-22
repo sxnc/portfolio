@@ -15,12 +15,128 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&display=swap" rel="stylesheet" />
 
+  <!-- IcoFont (2100+ icons, font-based) — used for event markers + backpack skills -->
+  <link href="https://cdn.jsdelivr.net/npm/icofont/dist/icofont.min.css" rel="stylesheet" />
+
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-  <!-- Static film-grain texture (no animation) -->
-  <div class="grain" aria-hidden="true"></div>
+  <!-- =================== PAPER / GRAIN TEXTURE ===================
+       Three stacked layers for depth:
+       · fiber  — large-scale directional fibres (overlay)
+       · mottle — soft coloured patches, paper aging (multiply)
+       · grain  — fine film/noise (multiply)
+  ========================================================= -->
+  <div class="paper-fiber"  aria-hidden="true"></div>
+  <div class="paper-mottle" aria-hidden="true"></div>
+  <div class="grain"        aria-hidden="true"></div>
+
+  <!-- =================== SVG ICON SPRITE =================== -->
+  <svg class="sprite" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+      <symbol id="ico-computer" viewBox="0 0 24 24">
+        <rect x="4" y="5" width="16" height="11" rx="1.5"/>
+        <path d="M2 19h20"/>
+        <path d="M10 8l-2 2 2 2M14 8l2 2-2 2"/>
+      </symbol>
+      <symbol id="ico-team" viewBox="0 0 24 24">
+        <circle cx="12" cy="7" r="3"/>
+        <path d="M6 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/>
+        <circle cx="5" cy="10" r="2"/>
+        <circle cx="19" cy="10" r="2"/>
+      </symbol>
+      <symbol id="ico-cto" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M15.5 8.5L13 13l-4.5 2.5L11 11l4.5-2.5z"/>
+      </symbol>
+      <symbol id="ico-po" viewBox="0 0 24 24">
+        <rect x="3" y="4" width="18" height="16" rx="1.5"/>
+        <path d="M9 4v16M15 4v16"/>
+        <path d="M5 8h2M5 12h2M11 8h2M11 14h2M17 8h2M17 11h2"/>
+      </symbol>
+      <symbol id="ico-camera" viewBox="0 0 24 24">
+        <rect x="2" y="7" width="14" height="11" rx="2"/>
+        <path d="M16 11l6-3v9l-6-3z"/>
+        <circle cx="7" cy="12.5" r="1.2"/>
+      </symbol>
+      <symbol id="ico-slate" viewBox="0 0 24 24">
+        <rect x="2" y="8" width="20" height="12" rx="1.5"/>
+        <path d="M2 12h20"/>
+        <path d="M5 8l-1-3 4 .5 1 3zM11 8.5l-1-3 4 .5 1 3zM17 8.5l-1-3 4 .5 1 3z"/>
+      </symbol>
+      <symbol id="ico-film" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9"/>
+        <circle cx="12" cy="12" r="2.2"/>
+        <circle cx="5.5" cy="12" r="1.4"/>
+        <circle cx="18.5" cy="12" r="1.4"/>
+        <circle cx="12" cy="5.5" r="1.4"/>
+        <circle cx="12" cy="18.5" r="1.4"/>
+      </symbol>
+      <symbol id="ico-play" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="14" rx="3"/>
+        <path d="M10.5 9.2l4.5 2.8-4.5 2.8V9.2z"/>
+      </symbol>
+      <symbol id="ico-broadcast" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="2"/>
+        <path d="M8.5 8.5a5 5 0 0 0 0 7"/>
+        <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+        <path d="M5.5 5.5a9 9 0 0 0 0 13"/>
+        <path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+      </symbol>
+      <symbol id="ico-code" viewBox="0 0 24 24">
+        <path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 5l-4 14"/>
+      </symbol>
+      <symbol id="ico-cap" viewBox="0 0 24 24">
+        <path d="M2 9l10-4 10 4-10 4L2 9z"/>
+        <path d="M6 11v4c0 .8 2.7 3 6 3s6-2.2 6-3v-4"/>
+        <path d="M22 9v5"/>
+      </symbol>
+      <symbol id="ico-sparkle" viewBox="0 0 24 24">
+        <path d="M12 3v18M3 12h18"/>
+        <path d="M6 6l12 12M18 6L6 18"/>
+      </symbol>
+      <symbol id="ico-pulse" viewBox="0 0 24 24">
+        <path d="M3 12h4l2-6 3 12 2-8 2 2h5"/>
+      </symbol>
+      <symbol id="ico-cloud" viewBox="0 0 24 24">
+        <path d="M7 18h11a4 4 0 0 0 0-8 6 6 0 0 0-11.3-2A4.5 4.5 0 0 0 7 18z"/>
+      </symbol>
+      <symbol id="ico-shield" viewBox="0 0 24 24">
+        <path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z"/>
+        <path d="M9 12l2 2 4-4"/>
+      </symbol>
+      <symbol id="ico-chart" viewBox="0 0 24 24">
+        <path d="M4 4v16h16"/>
+        <rect x="8" y="12" width="2.5" height="5"/>
+        <rect x="12" y="8" width="2.5" height="9"/>
+        <rect x="16" y="14" width="2.5" height="3"/>
+      </symbol>
+      <symbol id="ico-book" viewBox="0 0 24 24">
+        <path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4V4z"/>
+        <path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6V4z"/>
+      </symbol>
+      <symbol id="ico-pen" viewBox="0 0 24 24">
+        <path d="M4 20h4L20 8l-4-4L4 16v4z"/>
+        <path d="M14 6l4 4"/>
+      </symbol>
+
+      <!-- Fills the walking character's transparent interior with cream so
+           the timeline spine is fully hidden behind the silhouette. Uses
+           morphological closing (dilate → erode) to bridge interior gaps,
+           then floods cream and composites it beneath the original video. -->
+      <filter id="char-backdrop" x="-12%" y="-12%" width="124%" height="124%" color-interpolation-filters="sRGB">
+        <feMorphology in="SourceAlpha" operator="dilate" radius="20" result="dil"/>
+        <feMorphology in="dil" operator="erode" radius="18" result="closed"/>
+        <feFlood flood-color="#f3ede0" flood-opacity="1"/>
+        <feComposite operator="in" in2="closed" result="silh"/>
+        <feMerge>
+          <feMergeNode in="silh"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+    </defs>
+  </svg>
 
   <!-- =================== INTRO =================== -->
   <header class="intro">
@@ -44,9 +160,23 @@
     </div>
   </header>
 
-  <!-- =================== TIMELINE (reverse chronological) =================== -->
+  <!-- =================== TIMELINE =================== -->
   <main class="timeline" id="timeline">
-    <div class="timeline-line" aria-hidden="true"></div>
+
+    <!-- Background lines: main spine + video branch -->
+    <div class="timeline-line timeline-line-main"  aria-hidden="true"></div>
+    <div class="timeline-line timeline-line-video" aria-hidden="true"></div>
+
+    <!-- Fork joints — positioned via JS. viewBox matches rendered pixel
+         dimensions (220 × 80) so path coords align 1:1 with --branch-offset. -->
+    <svg class="timeline-fork timeline-fork-top" viewBox="0 0 220 80" preserveAspectRatio="none" aria-hidden="true">
+      <path class="fork-path" d="M 110 0 C 110 55, 210 25, 210 80"/>
+    </svg>
+    <svg class="timeline-fork timeline-fork-bottom" viewBox="0 0 220 80" preserveAspectRatio="none" aria-hidden="true">
+      <path class="fork-path" d="M 210 0 C 210 55, 110 25, 110 80"/>
+    </svg>
+
+    <!-- Moss-coloured "traced" overlay on main line -->
     <div class="timeline-travel" aria-hidden="true"></div>
 
     <!-- Today — start of timeline -->
@@ -60,19 +190,21 @@
       </div>
     </article>
 
-    <!-- 2025 · EVERYWOW -->
-    <article class="event event-major event-left" data-parallax="0.09" data-state="camera slate">
-      <div class="event-mark"></div>
+    <!-- 2025 · EVERYWOW — merge point: both branches converge here going upward -->
+    <article class="event event-major event-left" data-parallax="0.09" data-state="camera slate" data-branch-anchor="top" data-skills="ai claude-code prompt-eng llm-tools automation python video-prod post-prod livestream talent-coach">
+      <div class="event-mark event-mark-merge"></div>
       <div class="event-year">May 2025</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-video-clapper" aria-hidden="true"></i></span>
         <span class="event-kicker">Senior Producer</span>
         <h3 class="event-title">EVERYWOW AG</h3>
         <p class="event-where">Zürich · corporate video &amp; brand</p>
         <p class="event-desc">
-          Full production lifecycle for corporate video — brief, shoot,
-          talent coaching, post-supervision. Livestream events including
-          San Francisco. Co-host of the <em>WOW Happens</em> podcast.
-          Built the studio's AI-assisted subtitling and shorts pipelines.
+          <em>The two paths, combined.</em> Full production lifecycle for
+          corporate video — brief, shoot, talent coaching, post-supervision.
+          Livestream events including San Francisco. Co-host of the
+          <em>WOW Happens</em> podcast. Built the studio's AI-assisted
+          subtitling and shorts pipelines.
         </p>
         <ul class="event-tags">
           <li>DaVinci Resolve</li><li>Livestream</li><li>Python + Claude</li>
@@ -80,24 +212,31 @@
       </div>
     </article>
 
-    <!-- 2021 · Cheese Turbulence -->
-    <article class="event event-major event-right" data-parallax="0.1" data-state="po camera">
-      <div class="event-mark"></div>
+    <!-- ============ VIDEO BRANCH BEGINS (downward) ============ -->
+
+    <!-- 2021 · YouTube channel (anonymous) -->
+    <article class="event event-major event-right event-video" data-parallax="0.1" data-state="camera" data-skills="video-edit thumbnail content-strategy storytelling">
+      <div class="event-mark event-mark-video"></div>
       <div class="event-year">2021</div>
       <div class="event-card">
-        <span class="event-kicker">Solo project</span>
-        <h3 class="event-title">Cheese Turbulence launches</h3>
-        <p class="event-where">
-          <a href="https://youtube.com/@cheeseturbulence" target="_blank" rel="noopener">youtube.com/@cheeseturbulence</a>
-        </p>
+        <span class="event-icon" aria-hidden="true"><i class="icofont-play-alt-1" aria-hidden="true"></i></span>
+        <span class="event-kicker">Faceless YouTube channel</span>
+        <h3 class="event-title">A solo studio, in public.</h3>
+        <p class="event-where">Tech · keyboards · home theatre</p>
         <p class="event-desc">
-          Anonymous YouTube channel on tech, keyboards, and home
-          theatre. Every frame end-to-end by me — script, shoot,
-          edit, motion graphics, thumbnail, promotion.
+          An anonymous channel running end-to-end by me — script, shoot,
+          edit, motion graphics, thumbnail, promotion. A full production
+          company fitted inside one pair of hands.
         </p>
-        <div class="event-stat">
-          <span class="event-stat-num" data-count-to="50" data-suffix="k+">0</span>
-          <span class="event-stat-cap">subscribers &amp; counting</span>
+        <div class="event-stats">
+          <div class="event-stat">
+            <span class="event-stat-num" data-count-to="50" data-suffix="k+">0</span>
+            <span class="event-stat-cap">subscribers</span>
+          </div>
+          <div class="event-stat">
+            <span class="event-stat-num" data-count-to="7.5" data-decimals="1" data-suffix="M+">0</span>
+            <span class="event-stat-cap">total views</span>
+          </div>
         </div>
         <ul class="event-tags">
           <li>Solo</li><li>YouTube</li><li>End-to-end</li>
@@ -106,10 +245,11 @@
     </article>
 
     <!-- 2020 · Captain Flush -->
-    <article class="event event-minor event-left" data-parallax="0.05">
-      <div class="event-mark"></div>
+    <article class="event event-minor event-right event-video" data-parallax="0.06" data-skills="screenwriting">
+      <div class="event-mark event-mark-video"></div>
       <div class="event-year">2020</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-film" aria-hidden="true"></i></span>
         <p class="event-brief">
           <strong>"Captain Flush"</strong> — nominated &amp; shortlisted at
           ZFF72, the Zürich Film Festival short film competition.
@@ -117,11 +257,14 @@
       </div>
     </article>
 
-    <!-- 2019 · SRF -->
-    <article class="event event-major event-right" data-parallax="0.08" data-state="po">
+    <!-- ============ CAREER BRANCH (parallel, left column) ============ -->
+
+    <!-- 2019 · SRF PLAY -->
+    <article class="event event-major event-left" data-parallax="0.08" data-state="po" data-skills="aws streaming-infra safe stakeholder">
       <div class="event-mark"></div>
       <div class="event-year">Sep 2019</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-network-tower" aria-hidden="true"></i></span>
         <span class="event-kicker">Product Owner / Manager</span>
         <h3 class="event-title">SRF PLAY Backend</h3>
         <p class="event-where">Schweizer Radio und Fernsehen · Zürich</p>
@@ -141,11 +284,12 @@
       </div>
     </article>
 
-    <!-- 2018 · CTO -->
-    <article class="event event-major event-left" data-parallax="0.09" data-state="cto">
+    <!-- 2018 · CTO Amazee Labs -->
+    <article class="event event-major event-left" data-parallax="0.09" data-state="cto" data-skills="it-security kpi performance-coach">
       <div class="event-mark"></div>
       <div class="event-year">Aug 2018</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-compass" aria-hidden="true"></i></span>
         <span class="event-kicker">Chief Technology Officer</span>
         <h3 class="event-title">Amazee Labs AG</h3>
         <p class="event-where">Zürich</p>
@@ -164,11 +308,12 @@
       </div>
     </article>
 
-    <!-- 2018 · The Riddle -->
-    <article class="event event-minor event-right" data-parallax="0.05">
-      <div class="event-mark"></div>
+    <!-- 2018 · The Riddle (video branch) -->
+    <article class="event event-minor event-right event-video" data-parallax="0.06" data-skills="">
+      <div class="event-mark event-mark-video"></div>
       <div class="event-year">2018</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-film" aria-hidden="true"></i></span>
         <p class="event-brief">
           <strong>"The Riddle"</strong> — nominated &amp; shortlisted at
           Talent Screen Short Film Competition.
@@ -176,11 +321,35 @@
       </div>
     </article>
 
-    <!-- 2011 · Lead role -->
-    <article class="event event-major event-left" data-parallax="0.09" data-state="computer team">
+    <!-- 2018 · Summer Love — oldest video event: branch splits here going upward -->
+    <article class="event event-major event-right event-video" data-parallax="0.09" data-state="camera" data-branch-anchor="bottom" data-skills="directing cinematography">
+      <div class="event-mark event-mark-video event-mark-split"></div>
+      <div class="event-year">2018</div>
+      <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-camera-alt" aria-hidden="true"></i></span>
+        <span class="event-kicker">First public video</span>
+        <h3 class="event-title">"Summer Love"</h3>
+        <p class="event-where">Zürich Film Festival · ZFF 2018</p>
+        <p class="event-desc">
+          The first frame I let out into the world. <em>Where the
+          second path begins.</em> From here, a parallel line — short
+          films, festival nominations, and a channel of my own — runs
+          alongside the career track, all the way back up to 2025.
+        </p>
+        <ul class="event-tags">
+          <li>Short film</li><li>ZFF</li><li>First cut</li>
+        </ul>
+      </div>
+    </article>
+
+    <!-- ============ SINGLE LINE RESUMES ============ -->
+
+    <!-- 2011 · Team Lead Amazee -->
+    <article class="event event-major event-left" data-parallax="0.09" data-state="computer team" data-skills="scrum team-lead hiring delivery">
       <div class="event-mark"></div>
       <div class="event-year">Aug 2011</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-users-alt-3" aria-hidden="true"></i></span>
         <span class="event-kicker">Team Lead · Product Owner · PM</span>
         <h3 class="event-title">Amazee Labs AG</h3>
         <p class="event-where">Zürich · agency work</p>
@@ -199,18 +368,46 @@
       </div>
     </article>
 
-    <!-- 2008 · First job -->
-    <article class="event event-major event-right" data-parallax="0.08" data-state="computer">
+    <!-- ~2010 · Dev at Amazee Labs -->
+    <article class="event event-minor event-right" data-parallax="0.05" data-state="computer" data-skills="drupal">
+      <div class="event-mark"></div>
+      <div class="event-year">2010</div>
+      <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-code" aria-hidden="true"></i></span>
+        <p class="event-brief">
+          <strong>Amazee Labs — dev.</strong> Drupal, Typo3. Led a
+          four-person sitebuilding team and wrote the onboarding
+          playbook still referenced after I left.
+        </p>
+      </div>
+    </article>
+
+    <!-- ~2009 · Dev at Eins1 -->
+    <article class="event event-minor event-left" data-parallax="0.05" data-state="computer" data-skills="">
+      <div class="event-mark"></div>
+      <div class="event-year">2009</div>
+      <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-code" aria-hidden="true"></i></span>
+        <p class="event-brief">
+          <strong>Eins1.</strong> Full-stack — PHP, JS, CSS. Agency pace.
+          First taste of a tight delivery loop.
+        </p>
+      </div>
+    </article>
+
+    <!-- Aug 2008 · Dev at eye media — first job -->
+    <article class="event event-major event-right" data-parallax="0.08" data-state="computer" data-skills="php js css typo3">
       <div class="event-mark"></div>
       <div class="event-year">Aug 2008</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-code" aria-hidden="true"></i></span>
         <span class="event-kicker">Full-Stack Developer</span>
-        <h3 class="event-title">Amazee Labs · Eins1 · eye media</h3>
+        <h3 class="event-title">eye media</h3>
         <p class="event-where">Zürich · first role</p>
         <p class="event-desc">
           PHP, JavaScript, CSS. Drupal, Typo3, and the occasional
-          custom CMS. Led a four-person sitebuilding team and wrote
-          the onboarding playbook still referenced after I left.
+          custom CMS. The first line of production code shipped with
+          my name on it.
         </p>
         <ul class="event-tags">
           <li>Drupal</li><li>Typo3</li><li>UI/UX</li>
@@ -218,82 +415,76 @@
       </div>
     </article>
 
-    <!-- 2008 · Diploma -->
-    <article class="event event-minor event-left" data-parallax="0.05">
+    <!-- 2008 · EFZ Diploma -->
+    <article class="event event-minor event-left" data-parallax="0.05" data-skills="software-eng">
       <div class="event-mark"></div>
       <div class="event-year">2008</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-graduate" aria-hidden="true"></i></span>
         <p class="event-brief">EFZ Applikationsentwickler · Minerva Schulen. The license to build.</p>
       </div>
     </article>
 
     <!-- 1986 · Born -->
-    <article class="event event-minor event-right" data-parallax="0.06">
+    <article class="event event-minor event-right" data-parallax="0.06" data-skills="">
       <div class="event-mark"></div>
       <div class="event-year">1986</div>
       <div class="event-card">
+        <span class="event-icon" aria-hidden="true"><i class="icofont-star" aria-hidden="true"></i></span>
         <p class="event-brief">Born in Zürich. Swiss, through and through.</p>
       </div>
     </article>
 
   </main>
 
-  <!-- =================== CENTRE ORB (fixed) =================== -->
-  <div class="orb" id="orb" aria-hidden="true">
-    <div class="orb-halo"></div>
-    <div class="orb-body">
-      <div class="orb-icons">
+  <!-- =================== CHARACTER (fixed at viewport centre) ===================
+       A walking Victor with a backpack. Age morphs at the 2018 Summer-Love
+       threshold (cap + square specs below; Conan-style hair + round specs
+       above). Event icons fly into the backpack as they scroll past.
+  =============================================================== -->
+  <div class="character" id="character" tabindex="0" aria-label="Victor, walking the timeline — hover to see the skills collected so far">
+    <div class="char-art-wrap">
+      <!-- Walking videos. WebM for Chrome/Firefox; MOV (HEVC) for Safari.
+           mix-blend-mode: multiply on the video layer makes the white
+           background drop out into the cream paper beneath. -->
+      <video class="char-art char-adult" autoplay loop muted playsinline preload="auto" disablepictureinpicture>
+        <source src="assets/adult.webm" type="video/webm"/>
+        <source src="assets/adult.mov"  type="video/quicktime"/>
+      </video>
+      <video class="char-art char-teen" autoplay loop muted playsinline preload="auto" disablepictureinpicture>
+        <source src="assets/teen.webm"  type="video/webm"/>
+        <source src="assets/teen.mov"   type="video/quicktime"/>
+      </video>
 
-        <span class="orb-icon" data-role="computer">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="5" width="16" height="11" rx="1.5"/>
-            <path d="M2 19h20"/>
-            <path d="M10 8l-2 2 2 2M14 8l2 2-2 2"/>
-          </svg>
-        </span>
+      <!-- Invisible drop target over the backpack region — drives fly-to-backpack -->
+      <div class="char-backpack" aria-hidden="true"></div>
+      <!-- Ping ring that flashes when a skill lands -->
+      <div class="char-ping"     aria-hidden="true"></div>
+    </div>
 
-        <span class="orb-icon" data-role="team">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="7" r="3"/>
-            <path d="M6 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/>
-            <circle cx="5" cy="10" r="2"/>
-            <circle cx="19" cy="10" r="2"/>
-          </svg>
-        </span>
+    <!-- Speech bubble CTA — pure-CSS bubble with a tail pointing down at
+         the character's mouth. The outer anchor has `overflow: visible`
+         so the tail (::after) can extend below it; the inner bubble
+         span has `overflow: hidden` so the "..."↔"Let's talk!" text
+         swap animates smoothly as the bubble widens leftward. -->
+    <a class="char-cta" href="mailto:victor.kuenzig@gmail.com" aria-label="Let's talk — send an email to Victor">
+      <span class="char-cta-bubble"></span>
+    </a>
 
-        <span class="orb-icon" data-role="cto">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M15.5 8.5L13 13l-4.5 2.5L11 11l4.5-2.5z" fill="currentColor" stroke="none"/>
-            <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
-          </svg>
-        </span>
-
-        <span class="orb-icon" data-role="po">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="4" width="18" height="16" rx="1.5"/>
-            <path d="M9 4v16M15 4v16"/>
-            <path d="M5 8h2M5 12h2M11 8h2M11 14h2M17 8h2M17 11h2"/>
-          </svg>
-        </span>
-
-        <span class="orb-icon" data-role="camera">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="7" width="14" height="11" rx="2"/>
-            <path d="M16 11l6-3v9l-6-3z" fill="currentColor" stroke="none"/>
-            <circle cx="7" cy="12.5" r="1.2" fill="currentColor" stroke="none"/>
-          </svg>
-        </span>
-
-        <span class="orb-icon" data-role="slate">
-          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="2" y="8" width="20" height="12" rx="1.5"/>
-            <path d="M2 12h20"/>
-            <path d="M5 8l-1-3 4 .5 1 3zM11 8.5l-1-3 4 .5 1 3zM17 8.5l-1-3 4 .5 1 3z"/>
-          </svg>
-        </span>
-
-      </div>
+    <!-- Backpack panel — video-game inventory. Pops out when the character
+         is hovered; stays open while pointer is over the character or the
+         panel itself; JS populates the grid from the SKILLS registry. -->
+    <div class="char-skills" aria-hidden="true">
+      <header class="char-skills-header">
+        <h3 class="char-skills-title">Victor's Backpack</h3>
+        <span class="char-skills-count" id="char-count">0</span>
+      </header>
+      <nav class="char-skills-tabs" role="tablist">
+        <button type="button" data-cat="tech"   class="is-active" role="tab">Tech</button>
+        <button type="button" data-cat="people"               role="tab">People</button>
+        <button type="button" data-cat="craft"                role="tab">Craft</button>
+      </nav>
+      <div class="char-skills-grid" id="char-skills-grid" data-active-cat="tech"></div>
     </div>
   </div>
 
@@ -316,25 +507,9 @@
     <p class="outro-meta">
       <a href="https://linkedin.com/in/victor-kunzig" target="_blank" rel="noopener">LinkedIn</a>
       <span class="dot"></span>
-      <a href="https://youtube.com/@cheeseturbulence" target="_blank" rel="noopener">YouTube</a>
-      <span class="dot"></span>
       <a href="https://github.com/sxnc" target="_blank" rel="noopener">GitHub</a>
     </p>
   </footer>
-
-  <!-- =================== FLOATING CTA =================== -->
-  <a class="cta-float" href="mailto:victor.kuenzig@gmail.com" aria-label="Let's talk — send an email to Victor">
-    <span class="cta-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 11l11-5v13L3 14v-3z"/>
-        <path d="M3 11h2v3H3z" fill="currentColor" stroke="none"/>
-        <path d="M7 17l1 3h3l-1-3"/>
-        <path d="M17 8c1.5 1 1.5 6 0 8"/>
-        <path d="M20 5c2.5 2 2.5 12 0 14"/>
-      </svg>
-    </span>
-    <span class="cta-label">Let's talk</span>
-  </a>
 
   <script src="main.js"></script>
 </body>
