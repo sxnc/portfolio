@@ -255,6 +255,26 @@
     }
   };
 
+  /* Reserve grid height equal to the tallest currently-visible category,
+     so the panel's vertical centre-of-mass doesn't jump when the user
+     flips between tabs with different item counts. Must match
+     grid-auto-rows / gap on .char-skills-grid exactly. */
+  const TILE_H = 68;
+  const TILE_GAP = 5;
+  const updateGridReserve = () => {
+    if (!skillsGrid) return;
+    const counts = countByCat();
+    let maxCount = 0;
+    for (const btn of tabs) {
+      const cat = btn.dataset.cat;
+      const threshold = cat === 'hobby' ? 1 : 2;
+      if (counts[cat] >= threshold && counts[cat] > maxCount) maxCount = counts[cat];
+    }
+    if (maxCount === 0) { skillsGrid.style.minHeight = ''; return; }
+    const rows = Math.ceil(maxCount / 3);
+    skillsGrid.style.minHeight = (rows * TILE_H + (rows - 1) * TILE_GAP) + 'px';
+  };
+
   const updateCount = () => {
     if (!skillsCount) return;
     let n = 0;
@@ -268,6 +288,7 @@
     character?.classList.toggle('has-skills', n > 0);
     renumberVisibleSkills();
     updateTabVisibility();
+    updateGridReserve();
     animatePanelHeight();
   };
 

@@ -1336,6 +1336,13 @@ body:not(.hero-revealed) .char-hint-skills {
   pointer-events: auto;
 }
 
+/* Timeline-only: nudge the open panel a bit further right of the
+   character. Hero stage keeps the tighter anchor so the counter-scaled
+   panel doesn't drift off into empty space. */
+body:not(.hero-stage) .char-skills {
+  left: calc(100% + 22px);
+}
+
 /* ============ BIO CARDS (creative / technical) ============
    Small paper cards with short prose — same visual idiom as the
    backpack panel, no tabs or grid. They fly in from just beside the
@@ -1495,8 +1502,13 @@ body:not(.hero-revealed) .char-hint-skills {
 .char-skills-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  /* Fixed row height + align-content:start together guarantee that tiles
+     never vertically stretch when a short category has leftover vertical
+     space inside the reserved grid min-height. Without this, grid's
+     default `align-content: stretch` inflates the rows. */
+  grid-auto-rows: 68px;
+  align-content: start;
   gap: 5px;
-  min-height: 60px;
   flex: 1 1 auto;
   min-height: 0;                     /* allow flex shrink for scroll */
   overflow-y: auto;
