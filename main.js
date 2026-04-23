@@ -769,14 +769,27 @@
      ctaTop ≥ greetingBottom + buffer. */
   const INTRO_SCALE_MAX_DESKTOP = 1.76;
   const INTRO_SCALE_MAX_MOBILE_CEIL = 2.8;
+  // Probe the actual env(safe-area-inset-top) once. Notched phones
+  // (XR, 14, Air) return ~44–47 px; notchless phones (SE) return 0.
+  // Hardcoding 47 was wrong for SE — it shrank the computed usable
+  // height by a full notch worth of space that doesn't exist there,
+  // which over-shrank the hero character.
+  const readSafeAreaTop = () => {
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;left:0;padding-top:env(safe-area-inset-top);visibility:hidden;pointer-events:none;';
+    document.body.appendChild(probe);
+    const v = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+    probe.remove();
+    return v;
+  };
+  const safeAreaTop = readSafeAreaTop();
   const computeIntroScaleMax = () => {
     if (!isMobile) return INTRO_SCALE_MAX_DESKTOP;
     const vh = window.innerHeight;
     const vw = window.innerWidth;
-    const safeTop = 47;
     const greetingFont = Math.min(56, Math.max(32, 0.10 * vw));
-    const greetingBottom = safeTop + 32 + greetingFont;
-    const buffer = 20;
+    const greetingBottom = safeAreaTop + 32 + greetingFont;
+    const buffer = 28;
     const geomMax = (vh / 2 - greetingBottom - buffer) / 125.5;
     return Math.max(1.5, Math.min(INTRO_SCALE_MAX_MOBILE_CEIL, geomMax));
   };
