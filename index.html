@@ -7,6 +7,28 @@
   <meta name="description" content="Producer, creator, builder. Eighteen years of bridging creative, technical, and business." />
   <meta name="theme-color" content="#f3ede0" />
 
+  <!-- Opt out of every indexer, archiver, and AI crawler we can
+       reasonably name. The site is linked only from job applications
+       — we don't want it turning up in search results or training
+       corpora. Matches robots.txt at the repo root. -->
+  <meta name="robots"      content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="googlebot"   content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
+  <meta name="bingbot"     content="noindex, nofollow, noarchive, nosnippet" />
+  <meta name="GPTBot"      content="noindex, nofollow" />
+  <meta name="ChatGPT-User" content="noindex, nofollow" />
+  <meta name="Google-Extended" content="noindex, nofollow" />
+  <meta name="CCBot"       content="noindex, nofollow" />
+  <meta name="anthropic-ai" content="noindex, nofollow" />
+  <meta name="Claude-Web"  content="noindex, nofollow" />
+  <meta name="ClaudeBot"   content="noindex, nofollow" />
+  <meta name="PerplexityBot" content="noindex, nofollow" />
+  <meta name="Applebot-Extended" content="noindex, nofollow" />
+
+  <!-- Favicon — 192×192 PNG works across all modern browsers; same
+       file is reused as the Apple touch icon for iOS home-screen. -->
+  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="apple-touch-icon" href="icon.png" />
+
   <meta property="og:title" content="Victor Künzig · a life in events" />
   <meta property="og:description" content="Producer, creator, builder. One timeline." />
   <meta property="og:type" content="website" />
@@ -20,7 +42,7 @@
 
   <!-- The querystring forces a cache-miss when I ship CSS updates.
        Bump it whenever styles.css changes meaningfully. -->
-  <link rel="stylesheet" href="styles.css?v=20260423aj" />
+  <link rel="stylesheet" href="styles.css?v=20260423be" />
 </head>
 <body>
 
@@ -500,6 +522,7 @@
          is hovered; stays open while pointer is over the character or the
          panel itself; JS populates the grid from the SKILLS registry. -->
     <div class="char-skills" aria-hidden="true">
+      <button type="button" class="panel-close" aria-label="Close backpack" data-panel-close>&times;</button>
       <header class="char-skills-header">
         <h3 class="char-skills-title">Victor's Backpack of Skills</h3>
         <span class="char-skills-count" id="char-count">0</span>
@@ -518,6 +541,7 @@
     <!-- Creative bio card — opens when the upper-left head dot is
          hovered. Same paper + shadow styling as the backpack panel. -->
     <aside class="char-bio char-bio-creative" aria-hidden="true">
+      <button type="button" class="panel-close" aria-label="Close Creative panel" data-panel-close>&times;</button>
       <h3 class="char-bio-title">Creative</h3>
       <p>
         I love creating things, especially when I get to share them.
@@ -533,6 +557,7 @@
     <!-- Technical bio card — opens when the upper-right head dot is
          hovered. -->
     <aside class="char-bio char-bio-technical" aria-hidden="true">
+      <button type="button" class="panel-close" aria-label="Close Technical panel" data-panel-close>&times;</button>
       <h3 class="char-bio-title">Technical</h3>
       <p>
         Decades of problem-solving in IT have given me a unique,
@@ -610,6 +635,6 @@
     </div>
   </footer>
 
-  <script src="main.js?v=20260423aj"></script>
+  <script src="main.js?v=20260423be"></script>
 </body>
 </html>

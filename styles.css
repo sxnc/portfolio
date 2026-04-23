@@ -1561,15 +1561,19 @@ body:not(.hero-stage) .char-skills {
 }
 
 /* Cascading fill-up when the backpack opens — each skill scales in with
-   a small stagger based on its index within its category. */
-.character.is-open .char-skill {
+   a small stagger based on its index within its category. Mobile
+   mirror via body.panel-skills-open since the panel is lifted out of
+   .character on narrow viewports. */
+.character.is-open .char-skill,
+body.panel-skills-open .char-skill {
   animation: skillPop 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   animation-delay: calc(var(--i, 0) * 32ms);
   animation-fill-mode: both;
 }
 /* A skill arriving mid-open keeps its own batch stagger, not the whole
    panel's cascade delay. */
-.character.is-open .char-skill.just-added {
+.character.is-open .char-skill.just-added,
+body.panel-skills-open .char-skill.just-added {
   animation-delay: calc(var(--batch-i, 0) * 80ms);
 }
 
@@ -1913,10 +1917,43 @@ body:not(.hero-stage) .char-skills {
   }
 }
 
+/* Close (×) button on every panel — hidden on desktop (panels close
+   on pointer-out) and shown on mobile where touch users need an
+   explicit dismiss affordance. Placed inside each panel via HTML. */
+.panel-close {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--f-sans);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.55;
+  z-index: 2;
+}
+.panel-close:hover,
+.panel-close:focus-visible {
+  opacity: 1;
+  background: rgba(22, 22, 21, 0.07);
+}
+
 /* =================================================================
-   ============ MOBILE REWORK — <=720px viewports ============
+   ============ MOBILE REWORK — <=900px viewports ============
    Consolidated mobile overrides sit at the end of the file so they
-   win any specificity ties with earlier rules.
+   win any specificity ties with earlier rules. Breakpoint widened
+   from 720 → 900 so iPad-mini (768) and iPad-Air portrait (820)
+   inherit the same sheet-style panels, circular character, Caveat
+   labels, and content-sized backpack as phones.
 
    Hero stage  : "Hi!" greeting up top, character slightly above
                  centre, hint arrows hidden, tapping a head dot or
@@ -1928,26 +1965,29 @@ body:not(.hero-stage) .char-skills {
                  stuck to the bottom centre of the viewport and
                  tappable to toggle the backpack panel.
 ================================================================= */
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   /* ----- Character positioning ------------------------------ */
-  /* Default (timeline stage): pinned to the bottom centre. The
-     --char-anchor-offset that JS computes is zeroed here since
-     there's no "feet on final dot" math to satisfy at the bottom —
-     the character simply waits there while events scroll past. */
+  /* Bottom-sticky on mobile. CSS anchors the feet at `bottom: 32 px`;
+     --hero-lift (JS) pulls them UP toward viewport centre during the
+     hero stage, then interpolates back to 0 as the user scrolls.
+     --char-anchor-offset clamps the character onto the timeline's
+     bottom dot once the end of the page enters view. rAF-throttled
+     scroll handler keeps the motion smooth without a transition. */
   .character {
     top: auto;
-    bottom: 20px;
-    --char-anchor-offset: 0px;
-    transform: translateX(-50%) scale(var(--char-scale, 1));
+    bottom: 32px;
+    transform:
+      translateX(-50%)
+      translateY(calc(var(--hero-lift, 0px) + var(--char-anchor-offset, 0px)))
+      scale(var(--char-scale, 1));
     transform-origin: 50% 100%;
-    /* Make sure tap hits reach the dots; allow touch-action so the
-       panel open/close doesn't cancel page scroll gestures. */
     touch-action: manipulation;
+    transition: opacity 500ms var(--ease);
   }
-  /* Hero stage AND intro cinematic: centered in the viewport (the
-     greeting sits above, dots frame the head). Uses the standard
-     translate(-50%, -50%) compose — same as the desktop default. */
-  body.hero-stage .character,
+  /* Intro cinematic keeps the character viewport-centred (the curtain
+     covers everything behind it, so the stage is just the baby). The
+     classic translate(-50%, -50%) compose overrides the bottom-anchor
+     while playing-intro is active. */
   body.playing-intro .character {
     top: 50%;
     bottom: auto;
@@ -1957,6 +1997,64 @@ body:not(.hero-stage) .char-skills {
       scale(var(--char-scale, 1));
     transform-origin: 50% 50%;
   }
+  /* Short window right after the intro cinematic ends — JS adds
+     .intro-landing for ~420 ms so the transform transition has time
+     to melt the centered-cinematic position into the scroll-driven
+     rule. Outside that window we stay transition-less so the
+     rAF-driven scroll handler remains snappy. */
+  .character.intro-landing {
+    transition:
+      transform 420ms cubic-bezier(0.34, 1.0, 0.5, 1),
+      opacity 500ms var(--ease);
+  }
+
+  /* Circular cream backdrop around the character — visually frames
+     the walking figure as the tap trigger for the backpack. A moss
+     ring ties it to the moss-green cards below and to the backpack
+     hint dot on the character's hip. Opacity driven by
+     --circle-opacity (set in main.js proportional to scroll
+     progress) so the disk fades in as the user scrolls out of the
+     hero stage rather than popping at a class toggle. */
+  .character::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 178px;
+    height: 178px;
+    transform: translate(-50%, -50%);
+    /* Thick semi-transparent moss ring ties the circle to the
+       timeline cards + backpack hint dot without feeling like a
+       hard boundary. 80% alpha keeps the cream fill reading
+       through the edge. */
+    border: 6px solid rgba(58, 107, 74, 0.8);
+    border-radius: 50%;
+    background: var(--cream);
+    box-shadow:
+      0 6px 18px rgba(22, 22, 21, 0.14),
+      0 1px 2px rgba(22, 22, 21, 0.10);
+    opacity: var(--circle-opacity, 0);
+    transition: opacity 220ms var(--ease);
+    pointer-events: none;
+    z-index: -1;
+  }
+  /* Oversized invisible tap pad so the whole circle area opens the
+     backpack, not just the character's lines. Gated to the timeline
+     (not hero / intro) so it doesn't occlude the head-dot hints. */
+  body:not(.hero-stage):not(.playing-intro) .character::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 190px;
+    height: 190px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    z-index: 1;
+    pointer-events: auto;
+  }
+
 
   /* Hero greeting — anchored to the top of the viewport so the
      character + dots have room below. Smaller type to fit phone
@@ -1976,55 +2074,311 @@ body:not(.hero-stage) .char-skills {
   .hero-technical-hint { display: none !important; }
 
   /* ----- Hero content panels (creative / technical / skills) -----
-     On mobile we abandon the "anchored to dot" positioning and
-     instead float the open panel centered near the top of the
-     viewport where a thumb can easily close it with another tap on
-     the dot. All three panels share the same mobile layout. */
+     Mobile sheet opens from the TOP of the viewport, filling the
+     space above the bottom-sticky character. 44 px bottom clearance
+     keeps the half-out × above the circular character backdrop (the
+     178 px circle extends up to ~vh − 193, so the × at
+     panel.bottom + 28 lands with a little margin above it). */
   .char-bio,
   .char-skills {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 92px);
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    /* Content-sized on mobile — the panel only grows as tall as its
+       content. max-height caps it well above the character's
+       circular backdrop so even a fully packed backpack never
+       overlaps the figure. */
     bottom: auto;
-    left: 50%;
-    right: auto;
-    width: calc(100vw - 32px);
-    max-width: 420px;
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 260px);
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: none;
+    padding-bottom: 32px;         /* breathing room above the × */
+    /* overflow: visible so the absolutely-positioned × can poke past
+       the panel's bottom edge; the skills grid handles its own
+       overflow internally. */
+    overflow: visible;
     transform-origin: center top;
-    transform: translateX(-50%) translateY(-14px) scale(0.94);
-    overflow-y: auto;
+    transform: translateY(-14px) scale(0.98);
   }
-  .character.is-open .char-skills,
-  .character.is-open-bio-creative .char-bio-creative,
-  .character.is-open-bio-technical .char-bio-technical {
-    transform: translateX(-50%) translateY(0) scale(1);
+  /* Skills panel keeps its flex column so the grid scrolls
+     internally (not the whole panel). Bio cards are short prose —
+     no inner scroll needed (and forcing overflow-y: auto would
+     clip the half-out × button below). Size to content so there's
+     no dead space between the last paragraph and the × button;
+     the max-height cap prevents a very long bio from extending
+     into the character's area below. */
+  .char-bio {
+    bottom: auto;
+    max-height: calc(100vh - 240px);
+    padding: 30px 26px 44px;
+    font-size: 20px;
+    line-height: 1.55;
   }
-  /* In hero stage the greeting claims the top — push the panels
-     down a bit further so they don't overlap. */
+  .char-bio-title {
+    font-size: 32px;
+    margin-bottom: 14px;
+  }
+  .char-bio p { margin-bottom: 14px; }
+
+  /* Opened state — on mobile the panels live on <body> (lifted out
+     of .character by main.js so they can truly be viewport-fixed),
+     so we switch from the desktop `.character.is-open` descendant
+     selector to the mirrored `body.panel-*-open` class that JS
+     toggles alongside it. z-index 100 rides above .character
+     (is-open boosts it to 90) so the panel can't hide behind the
+     sticky-bottom character. */
+  body.panel-skills-open    .char-skills,
+  body.panel-creative-open  .char-bio-creative,
+  body.panel-technical-open .char-bio-technical {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 100;
+  }
+  /* Desktop nudges `.char-skills` well outside the viewport on the
+     timeline (`body:not(.hero-stage) .char-skills { left: calc(100%
+     + 22px) }`, specificity 0,2,0). Match that specificity here so
+     the mobile panel actually lands inside the viewport. */
+  body:not(.hero-stage) .char-skills {
+    left: 16px;
+  }
+  /* On the hero stage the greeting claims the top, so push the
+     panel down just far enough to clear it. */
   body.hero-stage .char-bio,
   body.hero-stage .char-skills {
     top: calc(env(safe-area-inset-top, 0px) + 140px);
   }
 
-  /* The desktop skills panel is sized for 3-wide at 280px; loosen
-     it so it can grow to full-width on mobile. */
-  .char-skills { width: calc(100vw - 32px); max-width: 420px; }
-
-  /* ----- CTA speech bubble -------------------------------------
-     On mobile the character is anchored at the viewport bottom, so
-     the bubble floats just above the backpack on the character's
-     right (where the skills dot sits). Smaller + no scaling change
-     when open, since tap-targets handle everything. */
-  .char-cta {
-    top: -8px;
-    right: -4px;
+  /* ----- Big circular × close (mobile only) -------------------
+     Sits straddling the panel's bottom edge — 50% inside, 50%
+     outside. A cream fill matches the rug; the × mark itself is
+     drawn with two thick ink-coloured bars (::before / ::after)
+     rather than the `&times;` glyph, which the browser renders too
+     thin to read at touch distance. The native &times; text is
+     hidden with font-size: 0 / color: transparent. */
+  .char-bio .panel-close,
+  .char-skills .panel-close {
+    display: flex;
+    position: absolute;
+    top: auto;
+    right: auto;
+    bottom: -28px;                /* half of the 56 px button height */
+    left: 50%;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--cream);
+    color: transparent;
+    font-size: 0;
+    line-height: 1;
+    box-shadow:
+      0 6px 18px rgba(22, 22, 21, 0.20),
+      0 1px 3px rgba(22, 22, 21, 0.12);
+    opacity: 1;
+    z-index: 101;
+    transform: translateX(-50%);
+  }
+  /* Thick ink-coloured × drawn as two rotated bars. Combined, they
+     read as a cleaner, bolder mark than a font's × glyph can. */
+  .char-bio .panel-close::before,
+  .char-bio .panel-close::after,
+  .char-skills .panel-close::before,
+  .char-skills .panel-close::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 24px;
+    height: 3px;
+    background: var(--ink);
+    border-radius: 2px;
+  }
+  .char-bio .panel-close::before,
+  .char-skills .panel-close::before {
+    transform: translate(-50%, -50%) rotate(45deg);
+  }
+  .char-bio .panel-close::after,
+  .char-skills .panel-close::after {
+    transform: translate(-50%, -50%) rotate(-45deg);
+  }
+  .char-bio .panel-close:hover,
+  .char-skills .panel-close:hover,
+  .char-bio .panel-close:focus-visible,
+  .char-skills .panel-close:focus-visible {
+    background: var(--paper);
   }
 
-  /* ----- Hint dots — bigger tap targets on touch --------------- */
-  .char-hint::before { inset: -16px; }
+  .char-skills-header { padding-right: 0; }
+
+  /* ----- CTA speech bubble (mobile) ---------------------------
+     Re-centre the bubble horizontally above the character's head
+     and make it a plain always-expanded "Let's talk!" chip. It
+     only appears on the hero stage at top, or on the timeline
+     while the backpack panel is open — everywhere else it fades
+     out. The underlying <a> is still a mailto link, so tap sends
+     mail on both states. */
+  .char-cta {
+    top: -35px;
+    left: 50%;
+    right: auto;
+    justify-content: center;
+    transform-origin: bottom center !important;
+    /* !important beats the desktop `.character.is-open .char-cta {
+       transform: scale(1.7) }` rule so the bubble stays a fixed
+       size on mobile. */
+    transform: translateX(-50%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transition: opacity 220ms var(--ease);
+  }
+  /* Show bubble on the hero top OR whenever skills panel is open. */
+  body.hero-stage.at-top .char-cta,
+  body.panel-skills-open:not(.hero-stage) .char-cta {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  /* On the timeline, the character is at its resting scale (1×), so
+     the bubble reads tiny next to him. Double it up while the
+     backpack panel is open — transform-origin bottom center keeps
+     the tail anchored at its current spot, bubble grows upward.
+     Bumped to -45 so the larger bubble sits clear of the circle. */
+  body.panel-skills-open:not(.hero-stage) .char-cta {
+    top: -45px;
+    transform: translateX(-50%) scale(2) !important;
+  }
+  /* Always-expanded "Let's talk!" state — min-width matches the
+     desktop is-open width, text layer crossfade locked to the
+     Let's-talk side. The collapsed "..." glyph is suppressed
+     outright so it never flashes into view during transitions. */
+  .char-cta-bubble::before { content: none !important; }
+  body.hero-stage.at-top .char-cta-bubble,
+  body.panel-skills-open:not(.hero-stage) .char-cta-bubble {
+    min-width: 82px;
+    box-shadow: 0 3px 12px rgba(58, 107, 74, 0.34);
+  }
+  body.hero-stage.at-top .char-cta-bubble::after,
+  body.panel-skills-open:not(.hero-stage) .char-cta-bubble::after {
+    opacity: 1;
+    transition-delay: 260ms;
+  }
+  /* Tail recentered under the bubble so it points down at the
+     character's head rather than off to the right. */
+  .char-cta::after {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) rotate(0deg);
+    top: calc(100% - 4px);
+  }
+
+  /* ----- Normalize 1986 event top margin ----------------------
+     Desktop gives the birth event an extra-wide chapter break
+     (clamp(140px, 20vh, 240px)); on mobile the stacked card
+     layout already provides its own visual breathing room, so
+     match the standard event gap for a consistent rhythm. */
+  .event[data-baby-source="true"] {
+    margin-top: 32px;
+  }
+
+  /* ----- Card parallax kill --------------------------------
+     Parallax is killed on mobile so year dividers and cards
+     scroll in lock-step with the timeline; the desktop's subtle
+     -s * speed vertical drift reads as a speed mismatch on the
+     smaller viewport. */
+  .event,
+  .event.in {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Skills grid grows taller in the sheet — bump the grid's
+     reserved min-height up by overriding the JS reserve cap so
+     tiles don't squish. JS manages this dynamically; no need for a
+     hardcoded width override now that the sheet rule above owns the
+     panel's horizontal bounds. */
+
+  /* ----- Hint dots — bigger visual + bigger tap target on touch */
+  /* The three hero hints (creative, technical, skills) and the
+     timeline backpack dot all scale up on mobile so they're easier
+     to see against the much-bigger-at-hero character and easier to
+     tap with a thumb. Hit pad (invisible ::before) grows alongside
+     for ~56 px of reachable area. */
+  .char-hint {
+    width: 16px;
+    height: 16px;
+    border-width: 3px;
+  }
+  .char-hint::before { inset: -20px; }
+  /* Skills dot sits right of the backpack; nudge its anchor out so
+     the enlarged circle doesn't intrude into the character's body. */
+  .char-hint-skills { left: calc(100% + 2px); }
+  /* Shift the two head-dot hints (+ their labels) outward on mobile
+     so the enlarged Caveat labels don't crowd the face. The labels
+     are ::after pseudos on each dot, so they move with the dot. */
+  .char-hint-creative  { left:  calc(11% - 5px);  }
+  .char-hint-technical { right: calc(11% - 10px); }
   /* Pulsing halo around the three hero head/backpack dots so they
      read as interactive on mobile where there's no hover affordance. */
   body.hero-stage .char-hint { animation: hintPulse 2s ease-out infinite; }
+  /* Hero hint dots (creative / technical / skills-when-on-head)
+     only surface at the very top of the page. As soon as the user
+     scrolls away, they hide immediately — keeps the hero stage
+     clean and avoids the dots lingering behind the moving character
+     during the scroll-driven transition. Smooth opacity fade for
+     the initial reveal once hero-revealed + at-top align. */
+  .char-hint { transition: opacity 180ms var(--ease), transform 220ms var(--ease); }
+  body:not(.at-top) .char-hint-creative,
+  body:not(.at-top) .char-hint-technical,
+  body.hero-stage:not(.at-top) .char-hint-skills {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Per-dot labels on the hero stage — hand-written Caveat text
+     hovering above each dot (no arrow, unlike the desktop hints,
+     but the same typeface and moss colour so the visual language
+     lines up). Rendered as an ::after so no HTML change is needed.
+     Scales with the character because the pseudo lives inside the
+     character's transform box. */
+  .char-hint-creative::after,
+  .char-hint-technical::after,
+  .char-hint-skills::after {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: "Caveat", "Bradley Hand", cursive;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+    color: var(--moss-deep);
+    letter-spacing: 0;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 180ms var(--ease);
+  }
+  .char-hint-creative::after  { content: "Creative"; }
+  .char-hint-technical::after { content: "Technical"; }
+  .char-hint-skills::after    { content: "Skills"; }
+  body.hero-stage.at-top .char-hint-creative::after,
+  body.hero-stage.at-top .char-hint-technical::after,
+  body.hero-stage.at-top .char-hint-skills::after {
+    opacity: 1;
+  }
+
+  /* Baby variant on mobile: centre the crib vertically inside the
+     circular backdrop. The SVG has its crib weight in the lower
+     two-thirds so translateY alone doesn't balance it against the
+     circle mid — shifting the layout top up 25 px alongside the
+     zeroed translate gets the visual centre on the circle's. */
+  .character.is-baby .char-baby {
+    top: -25px;
+    transform: translateY(0) scale(1);
+  }
 
   /* ----- Timeline column --------------------------------------- */
   .timeline {
@@ -2128,8 +2482,10 @@ body:not(.hero-stage) .char-skills {
   /* ----- Footer oval on mobile — a bit tighter ---------------- */
   .outro {
     min-height: calc(50vh - 72px);
-    /* Leave room so the sticky character doesn't overlap the seal */
-    padding-bottom: calc(145px + 32px);
+    /* Page ends right below the credits badge — the sticky
+       character fades out via JS (is-visible) once the timeline
+       scrolls past, so no extra padding is needed to clear it. */
+    padding-bottom: 32px;
   }
   .outro-card { padding: 18px 32px 14px; min-width: 170px; }
 

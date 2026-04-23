@@ -85,6 +85,25 @@
   const teenFloorEl    = document.querySelector('[data-teen-floor]');             // 2016 HSO       — teen ↔ adult threshold (lower neighbour)
   const schoolGateEl   = document.querySelector('[data-school-gate]');            // 2008 Minerva — school gate (baby hobbies boundary)
 
+  /* Mobile-only branches (includes iPad-mini + iPad-Air portrait).
+     Captured at boot so panels only move DOM once, and CSS / scroll
+     math can key off a single flag. Breakpoint matches the 900 px
+     CSS block. Resizing across the boundary isn't a common flow on
+     real devices, so we intentionally don't re-evaluate. */
+  const isMobile = window.matchMedia('(max-width: 900px)').matches;
+
+  /* On mobile the character element is scaled + translated, which
+     makes it a containing block for `position: fixed` descendants —
+     so the three panels can't actually reach the viewport edges
+     while nested inside. Lift them out to <body> once, and drive
+     their open state from body classes that mirror the character's
+     state classes (see syncPanelsOpenClass below). */
+  if (isMobile && character) {
+    [charPanel, charBioCreative, charBioTechnical].forEach(el => {
+      if (el && el.parentNode === character) document.body.appendChild(el);
+    });
+  }
+
   /* ---------- 4. Skill registry ----------
      Ordered within each category by market relevance today (top = most
      in-demand in 2026). Icons are IcoFont classes.
@@ -333,6 +352,12 @@
     if (!character) return;
     const any = Object.values(PANEL_CLASSES).some(cls => character.classList.contains(cls));
     document.body.classList.toggle('panels-open', any);
+    // Mirror per-panel state onto body so mobile CSS can target panels
+    // that were lifted out of .character (they'd otherwise lose the
+    // descendant selector).
+    document.body.classList.toggle('panel-skills-open',    character.classList.contains('is-open'));
+    document.body.classList.toggle('panel-creative-open',  character.classList.contains('is-open-bio-creative'));
+    document.body.classList.toggle('panel-technical-open', character.classList.contains('is-open-bio-technical'));
   };
   const closeAllPanels = () => {
     Object.values(PANEL_CLASSES).forEach(cls => character?.classList.remove(cls));
@@ -475,6 +500,16 @@
     charBioTechnical.addEventListener('mouseenter', () => openVariant('technical'));
     charBioTechnical.addEventListener('mouseleave', scheduleClose);
   }
+
+  // X close buttons inside each panel (mobile-only affordance, but
+  // wired unconditionally — desktop CSS hides them). Tap closes the
+  // active panel without relying on a hover-out gesture.
+  document.querySelectorAll('[data-panel-close]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeAllPanels();
+    });
+  });
 
   /* ---------- 7. Bending timeline spine ----------
      An SVG <path> rebuilt every scroll frame. The bulge is always
@@ -723,8 +758,10 @@
      also mirrored on body so arbitrary hero overlays (e.g. the
      "check out my skills!" arrow) can track it via CSS var. */
   /* Base char size bumped to 121×181, but the hero size should stay
-     as before (~213 px wide), so scale down to 213/121 ≈ 1.76. */
-  const INTRO_SCALE_MAX = 1.76;
+     as before (~213 px wide), so scale down to 213/121 ≈ 1.76. Mobile
+     bumps this further since the narrower viewport leaves lots of
+     whitespace around the hero character otherwise. */
+  const INTRO_SCALE_MAX = isMobile ? 2.8 : 1.76;
   const introBubble = document.getElementById('char-intro-bubble');
   const introEl    = document.querySelector('.intro');
   const updateIntroScale = () => {
@@ -751,6 +788,38 @@
       introBubble.style.setProperty('--intro-opacity', op.toFixed(3));
       introBubble.classList.toggle('is-hidden', op <= 0.02);
     }
+    // `at-top` reflects the very-top 20 px of scroll. Mobile CSS gates
+    // the hero-stage hint dots on this class so the dots only surface
+    // once the user has landed at the top (or re-scrolled back to it)
+    // and vanish the instant they start scrolling away.
+    document.body.classList.toggle('at-top', window.scrollY < 20);
+
+    // Mobile: character now top-anchors (CSS `top: 20px`, origin
+    // 50% 0%). --hero-lift pushes the head DOWN toward viewport
+    // centre during the hero stage, then interpolates back to 0 as
+    // the user scrolls. maxLift is computed from the peak hero
+    // scale so the endpoints are consistent regardless of the
+    // scale-in-transit. Linear in p for a predictable glide.
+    // Mobile: character bottom-anchors (CSS `bottom: 32px`, origin
+    // 50% 100%). --hero-lift pulls the feet UP toward viewport centre
+    // during the hero stage, then interpolates back to 0 as the user
+    // scrolls. The circular cream backdrop behind the character fades
+    // in proportional to scroll progress via --circle-opacity.
+    if (isMobile) {
+      const charBaseH = character.offsetHeight || 181;
+      const defaultFeetY = vh - 32;
+      const heroFeetY    = vh * 0.5 + (charBaseH * scale) * 0.5;
+      const lift = (heroFeetY - defaultFeetY) * (1 - p);
+      character.style.setProperty('--hero-lift', lift.toFixed(1) + 'px');
+      // Reveal the circle almost immediately on first scroll so the
+      // character never sits bare against an incoming moss card.
+      // Ramps 0 → 1 over the first ~15% of the intro zone.
+      const inIntroNow = document.body.classList.contains('playing-intro');
+      const circleT = inIntroNow
+        ? 0
+        : Math.min(1, Math.max(0, p / 0.15));
+      character.style.setProperty('--circle-opacity', circleT.toFixed(3));
+    }
   };
 
   let bootedEra = false;
@@ -770,14 +839,14 @@
     const inside = rect.bottom > mid - 160;
 
     // Once viewport mid scrolls past the point where the character's
-    // feet would be below the bottom dot (dot sits at timeline.bottom
-    // because of .timeline-start { bottom: -9 }), pull the character
-    // upward by the overshoot so its feet rest on the dot.
-    // Use offsetHeight (layout box, pre-transform) rather than
-    // getBoundingClientRect so the scaled hero-stage doesn't change the
-    // anchor math — we always anchor to the character's CSS height.
+    // feet would be below the bottom dot, pull the character upward
+    // by the overshoot so its feet rest on the dot. Desktop anchors
+    // to viewport mid; mobile anchors to the sticky-bottom feet
+    // position (vh − 32) and clamps so the character parks on the
+    // bottom dot once the timeline ends inside the viewport.
     const charHalfHeight = character.offsetHeight * 0.5;
-    const anchorOffset = Math.min(0, rect.bottom - mid - charHalfHeight);
+    const feetDefault = isMobile ? (window.innerHeight - 32) : (mid + charHalfHeight);
+    const anchorOffset = Math.min(0, rect.bottom - feetDefault);
     character.style.setProperty('--char-anchor-offset', anchorOffset.toFixed(2) + 'px');
     character.classList.toggle('is-visible', inside);
 
@@ -891,8 +960,24 @@
   };
 
   const bagTargetRect = () => {
-    // Fly target = the small moss "hint" dot sitting at the backpack
-    // edge, so arriving skills visibly converge on the interaction cue.
+    // Desktop: converge on the small moss hint dot at the backpack
+    // edge — that's the interaction cue users see.
+    // Mobile: converge on the centre of the circular backdrop that
+    // frames the character on the timeline. The dot is tiny against
+    // the big circle, so landing icons in the circle's middle reads
+    // as "going into the figure" more clearly.
+    if (isMobile && character) {
+      const r = character.getBoundingClientRect();
+      const size = 40;
+      const cx = r.left + r.width * 0.5;
+      const cy = r.top  + r.height * 0.5;
+      return {
+        left: cx - size * 0.5,
+        top:  cy - size * 0.5,
+        width: size,
+        height: size,
+      };
+    }
     const target = charHint || charBackpack;
     return target ? target.getBoundingClientRect() : null;
   };
@@ -929,13 +1014,22 @@
     const ids = eventSkills.get(ev);
     if (!ids) return;
     const evRect = eventTargetRect(ev);
+    const panelOpen = character && character.classList.contains('is-open');
     for (const id of ids) {
       const el = skillEls.get(id);
       if (!el || el.classList.contains('is-removed')) continue;
       if (animate && !reduceMotion) {
         const srcRect = el.getBoundingClientRect();
-        // If panel not visible, skip the chip flight and use the bag as the source
-        const from = (srcRect.width > 0 && srcRect.height > 0) ? srcRect : (bagTargetRect() || srcRect);
+        const hasRect = srcRect.width > 0 && srcRect.height > 0;
+        // Desktop: fly from the panel tile when it's visible.
+        // Mobile: if the panel is closed, the tile's layout-position
+        // sits at the top of the viewport (inside the hidden panel),
+        // so chips would appear to emerge from off-screen. Route
+        // them through bagTargetRect() — which is the character
+        // circle centre on mobile — so they look like they're
+        // leaving the character itself.
+        const useBag = !hasRect || (isMobile && !panelOpen);
+        const from = useBag ? (bagTargetRect() || srcRect) : srcRect;
         el.classList.add('is-removed');
         flyElement(from, evRect, SKILLS[id].icon, SKILLS[id].name);
       } else {
@@ -1255,6 +1349,11 @@
 
     // Hand off: remove all intro classes so normal scroll-driven
     // scale / opacity kick in. Remove the curtain from the DOM.
+    // Mobile: flag a brief transform-transition window so the
+    // centered-cinematic position melts into the scroll-driven
+    // anchor instead of snapping (our mobile .character rule is
+    // transition-less during normal scroll, so this is explicit).
+    if (isMobile) character?.classList.add('intro-landing');
     document.body.classList.remove('playing-intro', 'intro-phase-show', 'intro-phase-zoom');
     introCurtain.remove();
 
@@ -1262,6 +1361,9 @@
     // then kick the auto-scroll immediately (no pause).
     onScroll();
     startAutoScroll();
+    if (isMobile) {
+      setTimeout(() => character?.classList.remove('intro-landing'), 460);
+    }
   };
 
   // Kick off after layout settles. document.fonts.ready also gates the
