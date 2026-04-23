@@ -760,8 +760,26 @@
   /* Base char size bumped to 121×181, but the hero size should stay
      as before (~213 px wide), so scale down to 213/121 ≈ 1.76. Mobile
      bumps this further since the narrower viewport leaves lots of
-     whitespace around the hero character otherwise. */
-  const INTRO_SCALE_MAX = isMobile ? 2.8 : 1.76;
+     whitespace around the hero character otherwise — but we cap the
+     mobile ceiling against the viewport so the hero-stage CTA bubble
+     (which sits at char top − 35 px × scale) can't ride up into the
+     greeting ("Hi! I'm Victor.") at the top of the screen on short
+     phones. Math: charTop = vh/2 − 90.5·scale, ctaTop = charTop −
+     35·scale; greetingBottom ≈ safeTop + 32 + greetingFont. Require
+     ctaTop ≥ greetingBottom + buffer. */
+  const INTRO_SCALE_MAX_DESKTOP = 1.76;
+  const INTRO_SCALE_MAX_MOBILE_CEIL = 2.8;
+  const computeIntroScaleMax = () => {
+    if (!isMobile) return INTRO_SCALE_MAX_DESKTOP;
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const safeTop = 47;
+    const greetingFont = Math.min(56, Math.max(32, 0.10 * vw));
+    const greetingBottom = safeTop + 32 + greetingFont;
+    const buffer = 20;
+    const geomMax = (vh / 2 - greetingBottom - buffer) / 125.5;
+    return Math.max(1.5, Math.min(INTRO_SCALE_MAX_MOBILE_CEIL, geomMax));
+  };
   const introBubble = document.getElementById('char-intro-bubble');
   const introEl    = document.querySelector('.intro');
   const updateIntroScale = () => {
@@ -769,7 +787,8 @@
     const vh = window.innerHeight;
     const introEnd = (introEl ? introEl.offsetHeight : vh) - vh * 0.2;
     const p = introEnd > 0 ? Math.min(1, Math.max(0, window.scrollY / introEnd)) : 1;
-    const scale = INTRO_SCALE_MAX + (1 - INTRO_SCALE_MAX) * p;
+    const heroMax = computeIntroScaleMax();
+    const scale = heroMax + (1 - heroMax) * p;
     character.style.setProperty('--char-scale', scale.toFixed(3));
     const inHero = p < 0.55;
     character.classList.toggle('intro-mode', inHero);
@@ -813,8 +832,14 @@
       character.style.setProperty('--hero-lift', lift.toFixed(1) + 'px');
       // Reveal the circle almost immediately on first scroll so the
       // character never sits bare against an incoming moss card.
-      // Ramps 0 → 1 over the first ~15% of the intro zone.
-      const inIntroNow = document.body.classList.contains('playing-intro');
+      // Ramps 0 → 1 over the first ~15% of the intro zone. During the
+      // intro cinematic the disc is kept hidden so the stage reads as
+      // just-the-baby, EXCEPT during the zoom phase — letting it fade
+      // in alongside the curtain fade means the disc is already at
+      // full opacity when the cinematic hands off to the scroll-driven
+      // position, avoiding a pop-in at that moment.
+      const isZooming = document.body.classList.contains('intro-phase-zoom');
+      const inIntroNow = document.body.classList.contains('playing-intro') && !isZooming;
       const circleT = inIntroNow
         ? 0
         : Math.min(1, Math.max(0, p / 0.15));
@@ -1309,11 +1334,13 @@
 
   const playIntro = async () => {
     if (!introCurtain) return;
-    // Opt-out paths: #skip in the URL, or the user's reduced-motion
-    // preference. Either way, dismantle the curtain and leave the
-    // intro bubble in its normal scroll-driven state.
+    // Opt-out paths: #skip in the URL, the user's reduced-motion
+    // preference, or mobile (the centered-cinematic → bottom-anchored
+    // handoff looks janky on small viewports, so we skip the whole
+    // show). Either way, dismantle the curtain and leave the intro
+    // bubble in its normal scroll-driven state.
     const skipViaHash = /^#skip\b/i.test(window.location.hash || '');
-    if (reduceMotion || skipViaHash) {
+    if (reduceMotion || skipViaHash || isMobile) {
       introCurtain.remove();
       introBubble?.classList.remove('is-intro-held');
       // No cinematic to wait for — reveal the hints now.
@@ -1343,8 +1370,12 @@
     await sleep(900);
 
     // Phase C: curtain fades away, character scales 2.8 → 1.
+    //          onScroll re-reads the zoom class and releases the disc's
+    //          force-hidden state so it fades in with the curtain fade,
+    //          not after the handoff.
     introCurtain.classList.add('is-gone');
     document.body.classList.add('intro-phase-zoom');
+    onScroll();
     await sleep(1000);
 
     // Hand off: remove all intro classes so normal scroll-driven
@@ -1362,7 +1393,7 @@
     onScroll();
     startAutoScroll();
     if (isMobile) {
-      setTimeout(() => character?.classList.remove('intro-landing'), 460);
+      setTimeout(() => character?.classList.remove('intro-landing'), 860);
     }
   };
 
