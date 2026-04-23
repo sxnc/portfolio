@@ -1,7 +1,7 @@
 /* =================================================================
    Victor Künzig — timeline one-pager
    Cream + paper/grain base · moss-green accent.
-   Central spine with a parallel video branch (2018 → 2025).
+   Bending central spine that leans toward the event in view.
 ================================================================== */
 
 :root {
@@ -27,8 +27,6 @@
 
   --pad-x: clamp(20px, 4vw, 40px);
   --ease:  cubic-bezier(0.2, 0.8, 0.2, 1);
-
-  /* Branch geometry */
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -125,7 +123,9 @@ body.playing-intro .character {
   transition: transform 950ms cubic-bezier(0.34, 1.2, 0.5, 1), opacity 600ms var(--ease);
 }
 body.playing-intro .character {
-  --char-scale: 2.5 !important;
+  /* Intro cinematic scale tuned for the 121-wide base: 2.0 → 242 px
+     wide on screen, same visual presence as the old 97×2.5. */
+  --char-scale: 2.0 !important;
 }
 body.playing-intro.intro-phase-show .character {
   opacity: 1;
@@ -137,10 +137,7 @@ body.playing-intro .char-cta,
 body.playing-intro .char-hint,
 body.playing-intro .char-skills,
 body.playing-intro .char-intro-bubble,
-body.playing-intro .sky,
-body.playing-intro .paper-fiber,
-body.playing-intro .paper-mottle,
-body.playing-intro .grain {
+body.playing-intro .hero-skills-hint {
   opacity: 0 !important;
   pointer-events: none !important;
   transition: opacity 600ms var(--ease) !important;
@@ -149,51 +146,6 @@ body.playing-intro .grain {
 /* Reduced motion: skip the whole show, remove the curtain instantly. */
 @media (prefers-reduced-motion: reduce) {
   .intro-sequence { display: none; }
-}
-
-/* ============ PAGE-WIDE TEXTURE ============
-   Three stacked layers to make the page feel like
-   slightly-aged paper pulled from a production binder.
---------------------------------------------- */
-
-/* Layer 3 (topmost) — fine film grain */
-.grain {
-  position: fixed;
-  inset: 0;
-  z-index: 100;
-  pointer-events: none;
-  opacity: 0.14;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch' seed='3'/><feColorMatrix values='0 0 0 0 0.09 0 0 0 0 0.08 0 0 0 0 0.06 0 0 0 0.55 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
-  background-size: 260px 260px;
-}
-
-/* Layer 2 — soft coloured mottle (paper aging / warmth) */
-.paper-mottle {
-  position: fixed;
-  inset: 0;
-  z-index: 99;
-  pointer-events: none;
-  opacity: 0.7;
-  mix-blend-mode: multiply;
-  background:
-    radial-gradient(ellipse 55% 45% at 18% 22%, rgba(170, 140, 95, 0.10), transparent 72%),
-    radial-gradient(ellipse 60% 50% at 82% 78%, rgba(140, 115, 80, 0.09), transparent 70%),
-    radial-gradient(ellipse 45% 60% at 55% 50%, rgba(200, 175, 130, 0.06), transparent 70%),
-    radial-gradient(ellipse 35% 25% at 15% 85%, rgba(90, 70, 40, 0.04), transparent 65%),
-    radial-gradient(ellipse 40% 30% at 90% 15%, rgba(120, 90, 55, 0.05), transparent 65%);
-}
-
-/* Layer 1 — large-scale fibrous structure (directional, like paper fibres) */
-.paper-fiber {
-  position: fixed;
-  inset: 0;
-  z-index: 98;
-  pointer-events: none;
-  opacity: 0.22;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='520' height='520'><filter id='f'><feTurbulence type='turbulence' baseFrequency='0.012 0.09' numOctaves='2' stitchTiles='stitch' seed='7'/><feColorMatrix values='0 0 0 0 0.16 0 0 0 0 0.14 0 0 0 0 0.11 0 0 0 0.85 0'/></filter><rect width='100%25' height='100%25' filter='url(%23f)'/></svg>");
-  background-size: 520px 520px;
 }
 
 /* ============ INTRO — scroll zone only ============
@@ -206,165 +158,227 @@ body.playing-intro .grain {
   min-height: 70vh;
 }
 
-/* ============ SKY / TIME-OF-DAY BACKDROP ============
-   Ink-on-paper line art, no colour wash. Day mode shows a simple sun
-   outline plus a couple of drifting clouds. Night mode replaces them
-   with a waning-crescent moon outline and twinkling stars. The parent
-   <div id="sky"> carries the active mode in data-time, driven from the
-   user's local clock in main.js.
----------------------------------------------------------- */
-.sky {
+/* Notebook-paper grid behind the entire page, not just the hero.
+   Dense (17 px cells), constant opacity — fills the whole viewport
+   and stays visible as the user scrolls. */
+.intro-grid {
   position: fixed;
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  overflow: hidden;
-  color: var(--ink);
-  opacity: var(--sky-opacity, 1);
-  transition: opacity 420ms var(--ease);
-}
-.sky-bg { display: none; }           /* no colour wash at all */
-
-/* Sun — plain circle outline. Clean line-art, nothing decorative. */
-.sky-sun {
-  position: absolute;
-  top: 16%;
-  left: 74%;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 1.8px solid currentColor;
-  background: transparent;
-  opacity: 0;
-  animation: sunFloat 22s ease-in-out infinite;
-  transition: opacity 1200ms var(--ease);
-}
-.sky[data-time="day"] .sky-sun { opacity: 0.75; }
-@keyframes sunFloat {
-  0%,100% { transform: translateY(0); }
-  50%     { transform: translateY(-10px); }
+  background-image:
+    linear-gradient(to right,  rgba(22, 22, 21, 0.052) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(22, 22, 21, 0.052) 1px, transparent 1px);
+  background-size: 17px 17px;
+  background-position: center top;
 }
 
-/* Moon — waning crescent built by offsetting a masking circle so one
-   side of the outline ring is eaten away. Pure outline, no fill. */
-.sky-moon {
-  position: absolute;
-  top: 14%;
-  left: 22%;
-  width: 62px;
-  height: 62px;
-  border-radius: 50%;
-  border: 1.8px solid currentColor;
-  background: transparent;
-  opacity: 0;
-  animation: moonFloat 28s ease-in-out infinite;
-  transition: opacity 1200ms var(--ease);
-  /* Waning crescent: mask out the right side so only the left sliver
-     of the circle's outline remains. */
-  -webkit-mask: radial-gradient(circle at 140% 50%, transparent 58%, #000 58.5%);
-          mask: radial-gradient(circle at 140% 50%, transparent 58%, #000 58.5%);
-}
-.sky[data-time="night"] .sky-moon { opacity: 0.85; }
-/* The craters are just noise in outline mode — hide them entirely. */
-.sky-crater { display: none; }
-@keyframes moonFloat {
-  0%,100% { transform: translateY(0); }
-  50%     { transform: translateY(-6px); }
-}
-
-/* Stars — small hollow dots that softly twinkle. No glow. */
-.sky-star {
-  position: absolute;
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
-  opacity: 0;
-  animation: starTwinkle 4.2s ease-in-out infinite;
-}
-.sky[data-time="night"] .sky-star { opacity: 0.7; }
-.sky-star-1 { top: 18%; left: 14%; animation-delay: 0s;   width: 3px; height: 3px; }
-.sky-star-2 { top: 12%; left: 38%; animation-delay: 0.8s; width: 2px; height: 2px; }
-.sky-star-3 { top: 26%; left: 62%; animation-delay: 1.6s; width: 4px; height: 4px; }
-.sky-star-4 { top: 32%; left: 82%; animation-delay: 2.2s; width: 2px; height: 2px; }
-.sky-star-5 { top: 8%;  left: 72%; animation-delay: 0.4s; width: 3px; height: 3px; }
-.sky-star-6 { top: 22%; left: 48%; animation-delay: 3s;   width: 2px; height: 2px; }
-@keyframes starTwinkle {
-  0%,100% { opacity: 0.25; transform: scale(0.9); }
-  50%     { opacity: 0.85; transform: scale(1.1); }
-}
-
-/* Clouds — outline-only, drifting horizontally. Built from three
-   circular border-only blobs overlapped via box-shadow clones. */
-.sky-cloud {
-  position: absolute;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1.6px solid currentColor;
-  background: transparent;
-  opacity: 0;
-  animation: cloudDrift 60s linear infinite;
-  transition: opacity 1200ms var(--ease);
-}
-.sky-cloud::before,
-.sky-cloud::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  border: 1.6px solid currentColor;
-  background: var(--cream);  /* covers the overlapping lines so the silhouette reads as one shape */
-}
-.sky-cloud::before { width: 28px; height: 28px; top: -8px; left:  12px; }
-.sky-cloud::after  { width: 20px; height: 20px; top: -2px; left:  32px; }
-.sky[data-time="day"] .sky-cloud { opacity: 0.55; }
-.sky-cloud-1 { top: 24%; left: 20%; animation-duration: 80s; }
-.sky-cloud-2 { top: 16%; left: 50%; animation-duration: 120s; animation-delay: -30s; }
-.sky-cloud-3 { top: 34%; left: 68%; animation-duration: 95s;  animation-delay: -60s; }
-@keyframes cloudDrift {
-  0%   { transform: translateX(-120px); }
-  100% { transform: translateX(calc(100vw + 120px)); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .sky-sun, .sky-moon, .sky-cloud, .sky-star { animation: none !important; }
-  .sky-sun::before { animation: none !important; }
-}
-
-/* Speech bubble above the enlarged character. Fixed-positioned so it
-   floats independently of the character (which is itself fixed and
-   scroll-scaled). Styled after the backpack panel — paper background,
-   rounded corners, soft shadow, no coloured border. */
-.char-intro-bubble {
+/* Backdrop that blurs the page content while the character has a
+   panel open, drawing focus to the character + its card. Sits at
+   z-index 65 — above the timeline (z:2) but below the character
+   (z:70+) so the character and panels stay crisp. */
+.hover-backdrop {
   position: fixed;
-  /* Anchor to the character's face (viewport centre) and pin the
-     bubble's BOTTOM just above it. The bubble grows upward, so longer
-     copy just extends higher without ever getting clipped past the
-     top of the viewport. */
-  bottom: calc(50% + 170px);
+  inset: 0;
+  z-index: 65;
+  pointer-events: none;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+  background: rgba(243, 237, 224, 0);
+  transition:
+    backdrop-filter 300ms var(--ease),
+    -webkit-backdrop-filter 300ms var(--ease),
+    background 300ms var(--ease);
+}
+/* Blur only applies while the character is walking the timeline —
+   the hero stage already has enough empty space, so we don't blur
+   behind the creative/technical/skills cards there. */
+body.panels-open:not(.hero-stage) .hover-backdrop {
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  background: rgba(243, 237, 224, 0.2);
+}
+
+/* Hero greeting — no bubble chrome, just very large centered serif
+   type floating above the character during the intro. Kept on the
+   same #char-intro-bubble id so the .is-intro-held / --intro-opacity
+   wiring still works. */
+.char-intro-bubble.hero-greeting {
+  position: fixed;
+  bottom: calc(50% + 250px);
   top: auto;
   left: 50%;
   transform: translateX(-50%) scale(1);
-  transform-origin: 50% 100%;        /* pop-in grows from the tail */
+  transform-origin: 50% 100%;
   z-index: 72;
-  width: min(520px, 90vw);
-  padding: 18px 24px 16px;
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  box-shadow:
-    0 14px 36px rgba(22, 22, 21, 0.18),
-    0 2px 6px rgba(22, 22, 21, 0.08);
-  text-align: left;
-  font-family: var(--f-sans);
-  font-size: 13px;
-  line-height: 1.5;
-  color: var(--ink-body);
+  width: max-content;
+  max-width: 92vw;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  text-align: center;
+  pointer-events: none;
+  font-family: var(--f-serif);
+  font-weight: 500;
+  font-size: clamp(72px, 12vw, 180px);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+  white-space: nowrap;
   opacity: var(--intro-opacity, 1);
   transition:
     opacity   460ms var(--ease),
     transform 520ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  pointer-events: auto;
+}
+.hero-greeting em {
+  font-style: italic;
+  font-size: 1em;
+  color: var(--moss);
+}
+
+/* ============ REUSABLE HINT ARROW ============
+   A label + hand-drawn curved arrow, shared by any number of hint
+   elements. The arrowhead is the #hint-arrow-tip <marker> defined in
+   the sprite SVG, auto-oriented to the path's end-tangent — so no
+   manual coordinate math is ever needed for the arrowhead. To add a
+   new hint, drop a <div class="hint-arrow my-hint-instance"> in the
+   DOM and give `.my-hint-instance` a top/left/size; the generic
+   classes below handle the rest. */
+.hint-arrow {
+  position: fixed;
+  z-index: 73;
+  pointer-events: none;
+  color: var(--moss-deep);
+  opacity: var(--intro-opacity, 0);
+  transition: opacity 700ms var(--ease);
+}
+
+/* Late reveal — the hero hint arrows + the two head dots only appear
+   AFTER the "Hi! I'm Victor" greeting has landed (body.hero-revealed
+   is set by main.js once the auto-scroll finishes and the greeting
+   has had a moment to settle). Dots that live elsewhere on the page
+   (e.g. the skills dot still on the timeline) aren't affected because
+   this rule is scoped to the hero-mode head dots and hint arrows. */
+body:not(.hero-revealed) .hint-arrow,
+body:not(.hero-revealed) .char-hint-creative,
+body:not(.hero-revealed) .char-hint-technical,
+body:not(.hero-revealed) .char-hint-skills {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.hint-arrow-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.hint-arrow-label {
+  position: absolute;
+  font-family: "Caveat", "Bradley Hand", cursive;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--moss-deep);
+  white-space: nowrap;
+}
+
+/* Instance: the "check out my skills!" hint in the hero stage.
+   With the new 121×181 character the skills dot lands at (50vw + 139,
+   50vh − 72) at hero scale. SVG tip at (35, 90) → element origin
+   anchors at (50% + 109, 50% − 162). Shifted +5 px in x so the
+   arrowhead lands a little further right on the dot. */
+.hero-skills-hint {
+  top: calc(50% - 147px);
+  left: calc(50% + 86px);
+  width: 260px;
+  height: 130px;
+}
+.hero-skills-hint .hint-arrow-svg {
+  width: 120px;
+  height: 100px;
+}
+.hero-skills-hint .hint-arrow-label {
+  top: 54px;                         /* dot is at element y ≈ 90, label bottom ≈ 80 */
+  left: 125px;                       /* clear of the SVG's right edge */
+  font-size: 26px;
+}
+
+/* Instance: the "my creative chomps" hint (upper-left head dot).
+   Mirror of the skills hint — label sits on the LEFT, the SVG sits
+   on the RIGHT of the element, and the arrow curves down-right.
+   At hero scale the creative dot sits at (50vw − 58, 50vh − 134);
+   tip offset up-left by (10, 10) lands at (50vw − 68, 50vh − 144).
+   SVG tip at (85, 90) in its local 120×100 box; the SVG is pinned
+   to the element's right edge (width 280 − 120 = 160), so the tip
+   in element coords is (245, 90). Element origin therefore anchors
+   at (50vw − 313, 50vh − 234). */
+.hero-creative-hint {
+  top: calc(50% - 232px);
+  left: calc(50% - 334px);
+  width: 280px;
+  height: 130px;
+}
+.hero-creative-hint .hint-arrow-svg {
+  top: 0;
+  right: 0;
+  left: auto;
+  width: 120px;
+  height: 100px;
+}
+.hero-creative-hint .hint-arrow-label {
+  top: 54px;
+  right: 140px;
+  left: auto;
+  text-align: right;
+  font-size: 26px;
+}
+
+/* Instance: the "my technical prowess" hint (upper-right head dot).
+   Exact mirror of the creative hint: same size, same vertical anchor,
+   same label offset. Tip lands at (50vw + 89, 50vh − 142) — symmetric
+   to creative's (50vw − 89, 50vh − 142) — which now matches the dot
+   position after the right:11% change above. */
+.hero-technical-hint {
+  top: calc(50% - 232px);
+  left: calc(50% + 54px);
+  width: 280px;
+  height: 130px;
+}
+.hero-technical-hint .hint-arrow-svg {
+  width: 120px;
+  height: 100px;
+}
+.hero-technical-hint .hint-arrow-label {
+  top: 54px;
+  left: 140px;
+  font-size: 26px;
+}
+
+/* Mid viewports (below ~1040 px) start to squeeze the head-dot labels
+   against the viewport edges — clamp the label font-size so they stay
+   inside the available space. The skills label also tracks this so all
+   three hints read at the same size. */
+@media (max-width: 1040px) {
+  .hero-skills-hint    .hint-arrow-label,
+  .hero-creative-hint  .hint-arrow-label,
+  .hero-technical-hint .hint-arrow-label {
+    font-size: clamp(18px, 2.5vw, 26px);
+  }
+}
+
+/* Narrow viewports: character shrinks (77×116 → dot at (50vw + 80,
+   50vh − 46)), so the whole hint is reanchored by the same delta. */
+@media (max-width: 720px) {
+  .hero-skills-hint {
+    top: calc(50% - 136px);
+    left: calc(50% + 64px);
+  }
+  /* On narrow viewports both head-dot arrows collapse into very little
+     horizontal room, so we just hide them — the hero greeting + skills
+     arrow are enough signal. */
+  .hero-creative-hint,
+  .hero-technical-hint { display: none; }
 }
 /* Held hidden during the intro auto-scroll; revealed (via simple
    class removal) when the scroll lands at the top. Snap-to-hidden so
@@ -375,71 +389,17 @@ body.playing-intro .grain {
   pointer-events: none;
   transition: none !important;
 }
-/* Downward tail — two stacked triangles so the subtle --line border
-   on the bubble is continued along the tail's sides. */
-.char-intro-bubble::before,
-.char-intro-bubble::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-left: 13px solid transparent;
-  border-right: 13px solid transparent;
-  transform: translateX(-50%);
-}
-.char-intro-bubble::before {
-  border-top: 13px solid var(--line);
-}
-.char-intro-bubble::after {
-  margin-top: -1px;
-  border-left-width: 12px;
-  border-right-width: 12px;
-  border-top: 12px solid var(--paper);
-}
+/* No tail — bubble chrome removed; the hero uses just typography. */
 .char-intro-bubble.is-hidden {
   pointer-events: none;
 }
-.char-intro-bubble > p       { margin-bottom: 8px; }
-.char-intro-bubble > p:last-child { margin-bottom: 0; }
-.char-intro-bubble strong    { font-weight: 600; color: var(--ink); }
-/* Serif italic highlights match the existing event-card `<em>` idiom —
-   same font size as surrounding body text (Fraunces reads larger than
-   Inter at equal size, so we pin it to 1em and let the body size rule). */
-.char-intro-bubble em {
-  color: var(--moss-deep);
-  font-size: 1em;
-  font-style: italic;
-}
 
-.char-intro-heading {
-  font-family: var(--f-serif);
-  font-weight: 500;
-  font-size: clamp(20px, 2.2vw, 26px);
-  line-height: 1.15;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  margin-bottom: 10px;
-}
-.char-intro-heading em { color: var(--moss); font-size: 1em; }
-
-.char-intro-cta {
-  color: var(--moss-deep);
-  font-weight: 600;
-  text-decoration: underline;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 3px;
-  transition: color 240ms var(--ease);
-}
-.char-intro-cta:hover { color: var(--moss); }
-
-/* On narrow screens, bring the bubble in closer to the character. */
+/* On narrow screens, pull the hero greeting down closer to the
+   character's head so there's room for both. */
 @media (max-width: 620px) {
-  .char-intro-bubble {
-    top: calc(50% - 160px);
-    padding: 18px 20px 16px;
-    font-size: 13px;
+  .char-intro-bubble.hero-greeting {
+    bottom: calc(50% + 170px);
+    font-size: clamp(48px, 16vw, 96px);
   }
 }
 
@@ -478,20 +438,13 @@ body.playing-intro .grain {
   box-shadow: 0 0 0 1px var(--line);
   box-sizing: content-box;
 }
-.timeline-today-label {
-  font-family: var(--f-serif);
-  font-style: italic;
-  font-size: 13px;
-  letter-spacing: 0.02em;
-  color: var(--ink-muted);
-  background: var(--cream);
-  padding: 1px 7px;
-}
 /* Matching dot at the very bottom of the timeline — birth terminator,
-   no label. Uses the same visual as the "Today" dot above. */
+   no label. Dot centre lines up with timeline's bottom edge (where
+   the spine path terminates at y = h), so the line ends cleanly
+   inside the dot rather than poking past it. */
 .timeline-start {
   position: absolute;
-  bottom: -4px;
+  bottom: -9px;                    /* dot height 18 px with border → centre at timeline bottom */
   left: 50%;
   transform: translateX(-50%);
   z-index: 3;
@@ -526,6 +479,32 @@ body.playing-intro .grain {
   stroke-dasharray: var(--trace-len, 0) 99999;
 }
 
+/* ============ YEAR DIVIDERS ============
+   Sits between year groups on the timeline. Just a big serif year
+   label, centred on the spine. The label's cream background breaks
+   the spine behind it cleanly. */
+.year-divider {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: clamp(40px, 6vh, 80px) 0 clamp(28px, 4vh, 56px);
+  pointer-events: none;
+}
+.year-divider-label {
+  padding: 0 clamp(20px, 2.6vw, 36px);
+  text-align: center;
+  font-family: var(--f-serif);
+  font-weight: 500;
+  font-size: clamp(52px, 6.6vw, 96px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  background: var(--cream);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ============ EVENTS ============ */
 
 .event {
@@ -550,8 +529,6 @@ body.playing-intro .grain {
 }
 
 .event-major { --speed: 32px; }
-.event-minor { --speed: 18px; margin: clamp(40px, 6vh, 80px) 0; }
-.event-now   { --speed: 0px;  margin: 0 0 clamp(80px, 14vh, 160px); }
 
 /* Extra breathing room between the 1986 Born event and the first real
    event above it — gives the baby variant its own "chapter break" on
@@ -559,10 +536,9 @@ body.playing-intro .grain {
 .event[data-baby-source="true"] { margin-top: clamp(140px, 20vh, 240px); }
 
 /* The 1986 event is the origin of the whole timeline — mark it with a
-   big moss dot instead of the usual tiny minor-event dot. Overrides
-   .event-minor .event-mark for just this one event. Alignment is
-   handled by the shared --mark-align variable (computed against the
-   event's title by measureMarkOffsets in main.js). */
+   big moss dot instead of the default. Alignment is handled by the
+   shared --mark-align variable (computed against the event's title by
+   measureMarkOffsets in main.js). */
 .event[data-baby-source="true"] .event-mark {
   width: 20px;
   height: 20px;
@@ -591,17 +567,15 @@ body.playing-intro .grain {
   z-index: 2;
   margin-top: var(--mark-align, 22px);
   box-shadow: 0 0 0 1px var(--line);
-  transform: translateX(var(--bend-offset, 0px));
+  /* Mark mirrors the title's cumulative scroll-linked Y translate.
+     The title gets -8*s from its parent .event-card AND another -8*s
+     from its own rule, so its total Y shift is -16*s. The mark
+     (sibling of the card, not a child) doesn't inherit the card's
+     translate, so it has to apply the full -16*s itself to stay
+     glued to the title. */
+  transform: translate(var(--bend-offset, 0px), calc(var(--s) * -16px));
   transition: background 300ms var(--ease);
 }
-.event-minor .event-mark {
-  width: 7px; height: 7px;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
-  box-shadow: 0 0 0 3px var(--cream);
-  /* Alignment inherits from --mark-align (title-centred), set by JS. */
-}
-
 /* No connector line from the spine to the card — the bending spine
    itself points at whichever event is centred, so any extra line
    just adds visual noise. */
@@ -643,30 +617,30 @@ body.playing-intro .grain {
 
 /* Cards — branch left or right. Card sits in row 2 (the year label is
    in row 1 above it). --drift is declared on .event so year + card
-   share the same horizontal wobble. */
+   share the same horizontal wobble. No scale transform anymore — the
+   scale caused the title to drift vertically inside the card when
+   the card scaled, breaking spine-to-title alignment on tall cards
+   like SRF. Plain translate keeps every card rigid so the spine dot
+   lands on the title exactly. */
 .event-card {
   grid-row: 2;
-  padding: 4px 0;
   position: relative;
-  transform:
-    translate3d(var(--drift), calc(var(--s) * -8px), 0)
-    scale(calc(1 - var(--s-abs) * 0.03));
+  padding: 22px 26px 24px;
+  background: var(--moss);
+  color: var(--paper);
+  border-radius: 14px;
+  box-shadow:
+    0 6px 18px rgba(22, 22, 21, 0.14),
+    0 1px 2px rgba(22, 22, 21, 0.10);
+  transform: translate3d(var(--drift), calc(var(--s) * -8px), 0);
   transition: transform 160ms linear;
   will-change: transform, opacity;
 }
 .event-left  { --side: -1; }
 .event-right { --side:  1; }
 
-.event-left .event-card  { grid-column: 1; text-align: right; padding-right: clamp(20px, 4vw, 56px); }
-.event-right .event-card { grid-column: 3; text-align: left;  padding-left:  clamp(20px, 4vw, 56px); }
-
-.event-center .event-card {
-  grid-column: 1 / -1;
-  grid-row: 3;
-  text-align: center;
-  margin-top: 24px;
-}
-.event-center .event-year { grid-row: 2; }
+.event-left .event-card  { grid-column: 1; text-align: right; margin-right: clamp(16px, 3vw, 40px); }
+.event-right .event-card { grid-column: 3; text-align: left;  margin-left:  clamp(16px, 3vw, 40px); }
 
 /* Initial reveal — set by IntersectionObserver */
 .event {
@@ -677,11 +651,8 @@ body.playing-intro .grain {
 }
 .event.in { opacity: calc(1 - var(--s-abs) * var(--s-abs) * 0.35); }
 
-/* Icons */
+/* Icons — paper circle on moss card. */
 .event-icon {
-  /* Block-level flex so the icon occupies its own line (not sharing one
-     with the kicker span). That keeps the icon's top edge at the very top
-     of the card — so the `.event-mark` dot aligns visually with it. */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -689,7 +660,7 @@ body.playing-intro .grain {
   margin-bottom: 14px;
   border-radius: 50%;
   background: var(--paper);
-  border: 1px solid var(--line);
+  border: 1px solid rgba(250, 246, 236, 0.4);
   color: var(--moss-deep);
   box-shadow: 0 1px 0 rgba(22, 22, 21, 0.04);
   transform:
@@ -704,71 +675,93 @@ body.playing-intro .grain {
 }
 .event-major .event-icon { width: 48px; height: 48px; }
 .event-major .event-icon i { font-size: 24px; }
-/* Icons align to the card's text edge (right for event-left, left for
-   event-right), matching the asymmetric card text alignment. */
 .event-left  .event-icon { margin-left: auto;  margin-right: 0; }
 .event-right .event-icon { margin-right: auto; margin-left: 0; }
-/* Right-side events now carry a moss-tinted icon (creative track) while
-   left-side events keep the neutral paper icon (professional track). */
-.event-right .event-icon {
-  background: rgba(58, 107, 74, 0.06);
-  border-color: rgba(58, 107, 74, 0.22);
-}
-.event-center .event-icon { margin: 0 auto 14px; }
 
-/* Card content */
+/* Card content — paper-on-moss. Accents use cream / soft-moss. */
 .event-kicker {
   display: inline-block;
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--moss-deep);
+  color: var(--moss-soft);
   margin-bottom: 10px;
   font-weight: 600;
   transform: translateY(calc(var(--s) * -3px));
 }
 .event-title {
   font-family: var(--f-serif);
-  font-weight: 400;
+  font-weight: 500;
   font-size: clamp(24px, 2.6vw, 38px);
   line-height: 1.1;
   letter-spacing: -0.02em;
-  color: var(--ink);
+  color: var(--paper);
   margin-bottom: 6px;
   transform: translateY(calc(var(--s) * -8px));
   transition: transform 180ms linear;
 }
+
+/* Per-character shine. JS wraps every title character in a
+   .title-char <span> and stores its index in --i (and the total
+   count on the parent as --char-count). When the event becomes
+   active, each letter plays a brief brighten-and-glow animation,
+   with an animation-delay that stages the letters left-to-right
+   (or right-to-left for event-left cards). The result reads as a
+   bright sweep passing over each glyph individually. */
+.title-char {
+  display: inline-block;
+  will-change: color, text-shadow;
+}
+/* Each word is wrapped in .title-word so a line break can only land on
+   the whitespace between words, never mid-word. Inline-block by itself
+   doesn't stop breaks between its inline-block children — white-space:
+   nowrap does. */
+.title-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+.event.is-active .title-char {
+  animation: letterShine 700ms cubic-bezier(0.3, 0.6, 0.4, 1) both;
+  animation-delay: calc(var(--i, 0) * 32ms);
+}
+@keyframes letterShine {
+  0%   { color: var(--paper); text-shadow: none; }
+  40%  { color: #ffffff;      text-shadow: 0 0 6px rgba(255, 255, 255, 0.55); }
+  60%  { color: #ffffff;      text-shadow: 0 0 8px rgba(255, 255, 255, 0.65); }
+  100% { color: var(--paper); text-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .event.is-active .title-char { animation: none; }
+}
 .event-where {
   font-size: 14px;
-  color: var(--moss);
+  color: var(--moss-soft);
   margin-bottom: 16px;
   font-weight: 500;
   transform: translateY(calc(var(--s) * -6px));
 }
-.event-where a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
-.event-where a:hover { color: var(--moss-deep); }
+.event-where a {
+  color: var(--paper);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.event-where a:hover { color: var(--cream); }
 
 .event-desc {
   font-size: 15px;
   line-height: 1.6;
-  color: var(--ink-body);
+  color: rgba(250, 246, 236, 0.9);
   margin-bottom: 18px;
   max-width: 42ch;
+  text-align: justify;
+  hyphens: auto;
   transform: translateY(calc(var(--s) * -4px));
 }
+.event-desc em { color: var(--paper); font-style: italic; }
+.event-desc a  { color: var(--paper); text-decoration: underline; font-weight: 600; }
 .event-left  .event-desc { margin-left: auto;  margin-right: 0; }
 .event-right .event-desc { margin-right: auto; margin-left: 0; }
-
-.event-brief {
-  font-size: 15px;
-  line-height: 1.55;
-  color: var(--ink-soft);
-  max-width: 36ch;
-  transform: translateY(calc(var(--s) * -4px));
-}
-.event-brief strong { color: var(--ink); font-weight: 600; }
-.event-left  .event-brief { margin-left: auto;  margin-right: 0; }
-.event-right .event-brief { margin-right: auto; margin-left: 0; }
 
 /* Stats block — supports single or pair */
 .event-stats {
@@ -785,8 +778,8 @@ body.playing-intro .grain {
   gap: 2px;
   margin-bottom: 18px;
   padding: 14px 20px;
-  background: var(--paper);
-  border: 1px solid var(--line);
+  background: rgba(250, 246, 236, 0.12);
+  border: 1px solid rgba(250, 246, 236, 0.28);
   border-radius: 4px;
   transform: translateY(calc(var(--s) * -3px));
 }
@@ -795,18 +788,18 @@ body.playing-intro .grain {
 .event-right .event-stat { align-items: flex-start; }
 .event-stat-num {
   font-family: var(--f-serif);
-  font-weight: 400;
+  font-weight: 500;
   font-size: clamp(28px, 2.8vw, 40px);
   line-height: 1;
   letter-spacing: -0.02em;
-  color: var(--moss-deep);
+  color: var(--paper);
   font-variant-numeric: tabular-nums;
 }
 .event-stat-cap {
   font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ink-muted);
+  color: var(--moss-soft);
 }
 
 /* Tags */
@@ -825,54 +818,22 @@ body.playing-intro .grain {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 4px 10px;
-  border: 1px solid var(--line-strong);
+  border: 1px solid rgba(250, 246, 236, 0.38);
   border-radius: 999px;
-  color: var(--ink-soft);
-  background: rgba(250, 246, 236, 0.5);
+  color: var(--paper);
+  background: rgba(250, 246, 236, 0.12);
   transition: transform 300ms var(--ease), border-color 300ms var(--ease);
 }
 
-/* "Today" marker — pulsing moss dot */
-.event-mark-now {
-  width: 14px !important;
-  height: 14px !important;
-  background: var(--moss) !important;
-  border: 3px solid var(--cream) !important;
-  box-shadow: 0 0 0 1px var(--moss),
-              0 0 0 6px rgba(58, 107, 74, 0.15) !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.mark-pulse {
-  position: absolute;
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: var(--moss);
-  animation: pulse 2s ease-out infinite;
-}
-.event-now .event-year {
-  font-family: var(--f-serif) !important;
-  font-style: italic !important;
-  font-size: 14px !important;
-  text-transform: none !important;
-  letter-spacing: 0 !important;
-  color: var(--moss-deep) !important;
-}
-.event-now .event-brief {
-  font-family: var(--f-serif);
-  font-weight: 300;
-  font-size: clamp(22px, 2.4vw, 30px);
-  line-height: 1.25;
-  color: var(--ink);
-  max-width: 24ch;
-  margin: 0 auto;
-}
-
 /* Active event — subtle emphasis when near viewport centre */
+.event.is-active .event-card {
+  box-shadow:
+    0 10px 28px rgba(22, 22, 21, 0.22),
+    0 0 0 2px rgba(191, 209, 194, 0.25);
+}
 .event.is-active .event-icon {
-  border-color: var(--moss);
-  box-shadow: 0 0 0 4px rgba(58, 107, 74, 0.08);
+  border-color: rgba(250, 246, 236, 0.75);
+  box-shadow: 0 0 0 4px rgba(250, 246, 236, 0.14);
 }
 .event.is-active .event-mark {
   background: var(--moss);
@@ -902,17 +863,14 @@ body.playing-intro .grain {
   .event-year  { grid-column: 2; justify-self: start; font-size: 11px; transform: none !important; padding: 0; }
 
   .event-left .event-card,
-  .event-right .event-card,
-  .event-center .event-card {
+  .event-right .event-card {
     grid-column: 2;
     grid-row: 1 / span 2;
     text-align: left;
     padding: 0;
   }
   .event-left .event-desc,
-  .event-right .event-desc,
-  .event-left .event-brief,
-  .event-right .event-brief {
+  .event-right .event-desc {
     margin-left: 0;
     margin-right: 0;
   }
@@ -923,35 +881,91 @@ body.playing-intro .grain {
   .event-left .event-tags,
   .event-right .event-tags { justify-content: flex-start; }
   .event-left .event-icon,
-  .event-right .event-icon,
-  .event-center .event-icon { margin-left: 0; margin-right: 0; }
+  .event-right .event-icon { margin-left: 0; margin-right: 0; }
 }
 
 /* ============ FOOTER ============
-   Generous top padding (40vh) gives the user enough scroll after the
-   last event (1986) to actually bring that event into the viewport's
-   centre — which is where the baby variant kicks in. */
+   Height is tuned so the page's maximum scroll position lands exactly
+   where the character sits vertically centred — the moment its feet
+   (the bottom of the 181 px box) rest on the final timeline dot. Any
+   taller and you get dead space past the character's rest position;
+   any shorter and the character clamps upward before reaching centre.
+   Formula: outro.height = 50vh − charHalfHeight. Character height is
+   181 on desktop (half ≈ 90 px) and 145 on narrow viewports (half ≈
+   72 px) — the responsive override below matches the .character
+   breakpoint. Flex layout pins the card to the bottom so it stays
+   visible at the very end of the scroll. */
 .outro {
   position: relative;
   z-index: 2;
   margin: 0 auto;
-  padding: 40vh var(--pad-x) 32px;
+  min-height: calc(50vh - 90px);
+  padding: 0 var(--pad-x) 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
   text-align: center;
 }
-.outro-copy {
-  margin: 0;
+/* Oval "seal" shape — thin concentric ring around the paper body to
+   read as a pressed mark / stamp. The outer ring sits on the ::before
+   pseudo so we don't need extra DOM. */
+.outro-card {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 200px;
+  padding: 22px 44px 18px;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  box-shadow:
+    0 4px 16px rgba(22, 22, 21, 0.08),
+    0 1px 2px rgba(22, 22, 21, 0.06);
+}
+.outro-card::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  border: 1px solid var(--line);
+  border-radius: inherit;
+  pointer-events: none;
+}
+.outro-small {
   font-family: var(--f-sans);
-  font-size: 12px;
-  letter-spacing: 0.08em;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
   color: var(--ink-muted);
 }
-.outro-copy em {
-  font-style: italic;
-  color: var(--moss-deep);
+.outro-names {
+  font-family: var(--f-serif);
+  font-size: clamp(18px, 2.2vw, 24px);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  line-height: 1;
 }
-.outro-sep {
-  margin: 0 8px;
-  opacity: 0.55;
+.outro-names em {
+  font-style: italic;
+  color: var(--moss);
+}
+.outro-rule {
+  display: block;
+  width: 40px;
+  height: 1px;
+  background: var(--line-strong);
+  opacity: 0.7;
+  margin: 2px 0;
+}
+.outro-year {
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ============ CHARACTER — image-based, walking Victor ============
@@ -965,11 +979,17 @@ body.playing-intro .grain {
   top: 50%;
   left: 50%;
   z-index: 70;
-  width: 88px;
-  height: 132px;
+  width: 121px;
+  height: 181px;
   /* --char-scale is driven from main.js by scroll position: 2.2 at the
-     page top (intro), 1 once the user is inside the timeline. */
-  transform: translate(-50%, -50%) scale(var(--char-scale, 1));
+     page top (intro), 1 once the user is inside the timeline.
+     --char-anchor-offset pulls the character upward once viewport mid
+     scrolls past the bottom dot, so the character "stops" on the
+     dot instead of continuing off the end of the timeline. */
+  transform:
+    translateY(var(--char-anchor-offset, 0px))
+    translate(-50%, -50%)
+    scale(var(--char-scale, 1));
   opacity: 0;
   pointer-events: none;
   transition: opacity 500ms var(--ease);
@@ -980,33 +1000,50 @@ body.playing-intro .grain {
 }
 /* When the backpack opens, the character's stacking context jumps
    above the intro bubble (z-index 72) so the panel isn't occluded. */
-.character.is-open { z-index: 90; }
-/* Intro mode: hide the CTA bubble (the big intro speech bubble takes
-   over that role) and hide the backpack *unless it's actually open*.
-   Opening the backpack in the hero stage should still reveal the
-   panel — the intro speech bubble hides out of the way in main.js. */
+.character.is-open,
+.character.is-open-bio-creative,
+.character.is-open-bio-technical { z-index: 90; }
+
+/* Intro mode: hide the CTA bubble (the big greeting takes over that
+   role) and hide any panel that isn't actively open. Panels that ARE
+   open counter-scale so they read at natural size while the character
+   is at 2.2×. */
 .character.intro-mode .char-cta,
-.character.intro-mode:not(.is-open) .char-skills {
+.character.intro-mode:not(.is-open) .char-skills,
+.character.intro-mode:not(.is-open-bio-creative) .char-bio-creative,
+.character.intro-mode:not(.is-open-bio-technical) .char-bio-technical {
   opacity: 0 !important;
   pointer-events: none !important;
 }
-/* Panel counter-scale is now applied at all times via the base
-   .char-skills rule (see above), so no intro-mode special case. */
-/* Intro-mode: keep the hint dot visible but un-scale it so the scaled
-   character transform doesn't inflate it past readability. */
-.character.intro-mode .char-hint {
+
+/* Intro-mode: keep hint dots visible but un-scale them so the scaled
+   character transform doesn't inflate them past readability. The
+   skills dot uses translateY(-50%) as its position anchor, so that
+   component has to be preserved. Head dots are positioned by raw
+   top/left with no translate, so a plain scale works. */
+.character.intro-mode .char-hint-skills {
   transform: translate(0, -50%) scale(calc(1 / var(--char-scale, 1)));
   transform-origin: 0 50%;
 }
-.character.intro-mode .char-hint:hover {
+.character.intro-mode .char-hint-skills:hover {
   transform: translate(0, -50%) scale(calc(1.15 / var(--char-scale, 1)));
 }
+.character.intro-mode .char-hint-creative,
+.character.intro-mode .char-hint-technical {
+  transform: scale(calc(1 / var(--char-scale, 1)));
+  transform-origin: 50% 50%;
+}
+.character.intro-mode .char-hint-creative:hover,
+.character.intro-mode .char-hint-technical:hover {
+  transform: scale(calc(1.15 / var(--char-scale, 1)));
+}
 
-/* Baby era: no backpack interaction at all. Hide the hint dot and
-   disable hover on the character + any overlays. */
+/* Baby era: no interactions at all. Every dot, CTA, and panel is
+   hidden, and the cursor reverts to default over the character. */
 .character.is-baby .char-hint,
 .character.is-baby .char-cta,
-.character.is-baby .char-skills {
+.character.is-baby .char-skills,
+.character.is-baby .char-bio {
   opacity: 0 !important;
   pointer-events: none !important;
 }
@@ -1085,14 +1122,33 @@ body.playing-intro .grain {
 .character.is-young .char-teen  { opacity: 1; transform: scale(1); }
 .character.is-baby  .char-adult,
 .character.is-baby  .char-teen  { opacity: 0; transform: scale(0.78); }
-.character.is-baby  .char-baby  { opacity: 1; transform: scale(1); }
+.character.is-baby  .char-baby  { opacity: 1; transform: translateY(38px) scale(1); }
+
+/* Waving variant — shown only at the peak of the hero stage (nearly
+   scrolled all the way to the top, .is-hero-peak) AND in adult era.
+   Firing on this narrow band instead of the full intro-mode range
+   keeps the walking animation visible across most of the intro scroll
+   and only switches to waving right at the very end. Baby/teen eras
+   always suppress waving because it's adult-only footage. */
+.char-waving { opacity: 0; transform: scale(0.78); }
+.character.is-hero-peak:not(.is-young):not(.is-baby) .char-waving { opacity: 1; transform: scale(1); }
+.character.is-hero-peak:not(.is-young):not(.is-baby) .char-adult  { opacity: 0; transform: scale(0.78); }
+/* Baby SVG has ~38px of empty space below the drawn basket inside its
+   own viewBox. object-fit/position can't close that gap (the empty
+   space is part of the intrinsic image), so we translate the image
+   down by that amount — the basket bottom now lands on the container
+   bottom, which the anchor-offset math plants on the timeline-start
+   dot. The bit of SVG that spills below the container is just empty
+   cream space, invisible against the paper. */
+.char-baby { object-position: center bottom; }
 
 /* Baby variant: gentle crib rocking (tilt-rock, not a bounce) while
-   the character is in baby mode. */
+   the character is in baby mode. translateY(38px) is folded into
+   each keyframe so the rock doesn't undo the basket-bottom alignment. */
 .character.is-baby .char-baby { animation: babyRock 2.6s ease-in-out infinite; transform-origin: 50% 90%; }
 @keyframes babyRock {
-  0%,100% { transform: scale(1) rotate(-5deg); }
-  50%     { transform: scale(1) rotate(5deg); }
+  0%,100% { transform: translateY(38px) scale(1) rotate(-5deg); }
+  50%     { transform: translateY(38px) scale(1) rotate(5deg); }
 }
 
 /* Collect-bump — a quick scale pulse on the whole wrapper. Layers on top of
@@ -1140,27 +1196,20 @@ body.playing-intro .grain {
   100% { opacity: 0;   transform: translate(-50%, -50%) scale(2.2); }
 }
 
-/* Small pulsing moss dot sitting just above the backpack's top edge —
-   the same pulse idiom as the "Today" timeline marker, but ~half size.
-   Signals "hover here, it's interactive". Has pointer-events, so
-   hovering the dot itself opens the backpack and the CTA bubble.
+/* Small pulsing moss dots — the same pulse idiom as the "Today"
+   timeline marker, but half size. Each instance is positioned
+   separately (see .char-hint-skills/-creative/-technical below).
    An invisible hit-pad around the dot makes it comfortably clickable
-   even though the dot itself is tiny.
-   Stays visible during the intro/hero stage (even while the big
-   speech bubble has focus) so the user sees that there's an inventory
-   to open. */
+   even though the dot itself is tiny. */
 .char-hint {
   position: absolute;
-  top: 32%;
-  left: calc(100% - 2px);
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--moss);
   border: 2px solid var(--cream);
   box-shadow: 0 0 0 1px var(--moss),
               0 0 0 4px rgba(58, 107, 74, 0.14);
-  transform: translateY(-50%);
   cursor: pointer;
   pointer-events: auto;
   opacity: 0;
@@ -1175,8 +1224,55 @@ body.playing-intro .grain {
   border-radius: 50%;
 }
 .character.is-visible .char-hint { opacity: 1; }
-.character.is-open    .char-hint { opacity: 0.3; }
-.char-hint:hover { transform: translateY(-50%) scale(1.15); }
+.char-hint:hover { transform: scale(1.15); }
+
+/* When the backpack is empty (no skills left in the bag), hide the
+   green hint dot — nothing to advertise, and the pulsing cue would
+   be misleading. The `.has-skills` class is toggled in main.js from
+   updateCount(). */
+.character:not(.has-skills) .char-hint-skills {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Skills dot — just off the right edge of the backpack. Centred
+   vertically using translateY(-50%) on its top: 32% anchor. */
+.char-hint-skills {
+  top: 32%;
+  left: calc(100% - 2px);
+  transform: translateY(-50%);
+}
+.char-hint-skills:hover { transform: translateY(-50%) scale(1.15); }
+.character.is-open .char-hint-skills { opacity: 0.3; }
+
+/* Creative dot — upper-left of head. Anchored 11% in from the left
+   edge, at 3% from the top. */
+.char-hint-creative {
+  top: 3%;
+  left: 11%;
+}
+.character.is-open-bio-creative .char-hint-creative { opacity: 0.3; }
+
+/* Technical dot — upper-right of head, an exact mirror of the
+   creative dot. Using right:11% (rather than left:89%) positions the
+   dot's RIGHT edge at the mirror of creative's LEFT edge, so both
+   dots sit the same visual distance from the character's head rather
+   than just close by. */
+.char-hint-technical {
+  top: 3%;
+  right: 11%;
+  left: auto;
+}
+.character.is-open-bio-technical .char-hint-technical { opacity: 0.3; }
+
+/* Once the user scrolls out of the intro zone (intro-mode class is
+   removed), the two bio dots hide — only the skills dot stays on the
+   character as it walks the timeline. */
+.character:not(.intro-mode) .char-hint-creative,
+.character:not(.intro-mode) .char-hint-technical {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
 
 .char-hint-pulse {
   position: absolute;
@@ -1195,24 +1291,33 @@ body.playing-intro .grain {
 
 .char-skills {
   position: absolute;
-  /* Anchor to the character's top-left of the bag area (backpack is
-     roughly vertically centred on the character's torso). Using a
-     TOP anchor with no -50% translate means the panel grows downward
-     as skills come and go, keeping the header pinned in place. */
-  top: 20%;
-  left: calc(100% + 18px);
-  transform-origin: top left;
+  /* Panel's vertical centre is locked to the character's vertical
+     centre (= viewport mid, since .character is fixed at top:50%).
+     Horizontally, the panel still anchors to the right edge of the
+     character with a small gap. Result: no matter how tall the panel
+     grows, it's always vertically centred in the viewport — it no
+     longer hangs off the skills dot. */
+  top: 50%;
+  left: calc(100% + 6px);
+  transform-origin: left center;
   /* Counter-scale always — the character's transform scales from 2.2
      at hero to 1 in the timeline, and without this the panel would
      resize alongside the character as the user scrolls through the
-     intro zone. */
-  transform: translateX(-14px) scale(calc(0.25 / var(--char-scale, 1))) rotate(-10deg);
+     intro zone. translateY(-50%) centres the panel vertically on its
+     top:50% anchor; translateX(-14px) is the small drift-in offset
+     used during the open animation. */
+  transform: translateY(-50%) translateX(-14px) scale(calc(0.25 / var(--char-scale, 1))) rotate(-10deg);
   opacity: 0;
   pointer-events: none;
   width: 280px;
   max-width: 320px;
-  max-height: 70vh;
-  overflow-y: auto;
+  /* Flex column so header + tabs stay above the grid. Height is
+     content-sized so there's no empty dead space below the last
+     tile; max-height caps it at half the viewport so a full grid
+     still fits without overflowing past the top/bottom edges. */
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 60px);
   padding: 14px 16px 12px;
   background: var(--paper);
   border: 1px solid var(--line);
@@ -1226,6 +1331,83 @@ body.playing-intro .grain {
   z-index: 80;
 }
 .character.is-open .char-skills {
+  transform: translateY(-50%) translateX(0) scale(calc(1 / var(--char-scale, 1))) rotate(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ============ BIO CARDS (creative / technical) ============
+   Small paper cards with short prose — same visual idiom as the
+   backpack panel, no tabs or grid. They fly in from just beside the
+   character when the matching head dot is hovered. Two instances:
+   creative opens to the LEFT of the character, technical opens to
+   the RIGHT. Each is counter-scaled so it reads at natural size in
+   the hero stage. */
+.char-bio {
+  position: absolute;
+  /* Bio cards only appear in the hero stage (the two head dots that
+     trigger them are hidden on the timeline). Sized to breathe into
+     the large empty space beside the hero-scale character, not the
+     cramped timeline column. */
+  width: 360px;
+  max-width: 90vw;
+  padding: 22px 24px 20px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow:
+    0 14px 36px rgba(22, 22, 21, 0.18),
+    0 2px 6px rgba(22, 22, 21, 0.08);
+  font-family: var(--f-sans);
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--ink-body);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 460ms cubic-bezier(0.34, 1.6, 0.64, 1),
+    opacity 260ms ease-out;
+  z-index: 80;
+}
+/* Creative box: upper-RIGHT corner anchored to the creative dot with
+   a small offset so the dot stays fully visible below the anchor
+   corner. Dot is at (11%, 3%) of the character — the box's right edge
+   sits 6 px past that, and its top sits 8 px below it. Counter-scale
+   origin is top-right so the box grows down-left as it opens. */
+.char-bio-creative {
+  right: calc(100% - 11% + 6px);
+  top: calc(3% + 8px);
+  left: auto;
+  transform-origin: top right;
+  transform: translateX(14px) scale(calc(0.25 / var(--char-scale, 1))) rotate(8deg);
+}
+/* Technical box: mirror — upper-LEFT corner anchors to the tech dot
+   at (76%, 3%). */
+.char-bio-technical {
+  left: calc(76% + 6px);
+  top: calc(3% + 8px);
+  transform-origin: top left;
+  transform: translateX(-14px) scale(calc(0.25 / var(--char-scale, 1))) rotate(-8deg);
+}
+.char-bio-title {
+  font-family: var(--f-serif);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+.char-bio p { margin-bottom: 10px; }
+.char-bio p:last-child { margin-bottom: 0; }
+.char-bio em { font-style: italic; font-size: 1em; color: var(--moss-deep); }
+.char-bio strong { font-weight: 600; color: var(--ink); }
+
+.character.is-open-bio-creative .char-bio-creative {
+  transform: translateX(0) scale(calc(1 / var(--char-scale, 1))) rotate(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+.character.is-open-bio-technical .char-bio-technical {
   transform: translateX(0) scale(calc(1 / var(--char-scale, 1))) rotate(0);
   opacity: 1;
   pointer-events: auto;
@@ -1307,12 +1489,18 @@ body.playing-intro .grain {
   transform: scale(0.95);
 }
 
-/* Skill grid */
+/* Skill grid — scrolls inside the flex column, header + tabs stay
+   pinned above it. Padding-right gives the scrollbar breathing room
+   so it doesn't overlap the rightmost column of tiles. */
 .char-skills-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 5px;
   min-height: 60px;
+  flex: 1 1 auto;
+  min-height: 0;                     /* allow flex shrink for scroll */
+  overflow-y: auto;
+  padding-right: 4px;
 }
 .char-skill {
   display: none;
@@ -1338,8 +1526,7 @@ body.playing-intro .grain {
 .char-skills-grid[data-active-cat="tech"]   .char-skill[data-cat="tech"],
 .char-skills-grid[data-active-cat="people"] .char-skill[data-cat="people"],
 .char-skills-grid[data-active-cat="craft"]  .char-skill[data-cat="craft"],
-.char-skills-grid[data-active-cat="hobby"]  .char-skill[data-cat="hobby"],
-.char-skills-grid[data-active-cat="baby"]   .char-skill[data-cat="baby"] {
+.char-skills-grid[data-active-cat="hobby"]  .char-skill[data-cat="hobby"] {
   display: flex;
 }
 .char-skill:hover {
@@ -1379,6 +1566,7 @@ body.playing-intro .grain {
 
 /* Smooth the panel resizing when skills come and go while open */
 .char-skills { will-change: height; }
+
 
 .char-skill-icon {
   width: 26px;
@@ -1503,23 +1691,26 @@ body.playing-intro .grain {
 /* ============ RESPONSIVE CHARACTER ============ */
 
 @media (max-width: 900px) {
-  .character { width: 70px; height: 105px; }
+  .character { width: 96px; height: 145px; }
+  /* Character shrinks to 145 px tall → halfHeight ≈ 72 px. Match the
+     outro height so max scroll = character-centred still holds. */
+  .outro { min-height: calc(50vh - 72px); }
   .char-skills {
-    top: 20%;
+    top: 50%;
     left: auto;
     right: calc(100% + 16px);
-    transform-origin: top right;
-    transform: translateX(14px) scale(calc(0.25 / var(--char-scale, 1))) rotate(10deg);
+    transform-origin: right center;
+    transform: translateY(-50%) translateX(14px) scale(calc(0.25 / var(--char-scale, 1))) rotate(10deg);
     width: 240px;
     max-width: 260px;
   }
   .character.is-open .char-skills {
-    transform: translateX(0) scale(calc(1 / var(--char-scale, 1))) rotate(0);
+    transform: translateY(-50%) translateX(0) scale(calc(1 / var(--char-scale, 1))) rotate(0);
   }
 
   /* Bubble shrinks proportionally (0.795×) to keep the same visual
      distance from the character's face. */
-  .char-cta       { top: -14px; right: 52px; }
+  .char-cta       { top: -18px; right: 65px; }
   .char-cta::after{ top: calc(100% - 6px); width: 10px; height: 11px; }
   .char-cta-bubble{
     min-width: 22px;
@@ -1570,8 +1761,8 @@ body.playing-intro .grain {
    rather than several overlapping stages. */
 .char-cta {
   position: absolute;
-  top: -18px;
-  right: 65px;
+  top: -25px;
+  right: 90px;
   z-index: 78;
   display: inline-flex;
   align-items: center;
@@ -1597,7 +1788,26 @@ body.playing-intro .grain {
   transform: scale(1.7);
 }
 
-/* Tail — short rotated triangle tucked against the bubble's bottom-right. */
+/* Hover-bounce — a bigger, overshoot-eased scale that reacts to the
+   pointer no matter whether the bubble is in its resting or open
+   state. Uses a springy cubic-bezier so the enlarge feels tactile. */
+.character.is-visible .char-cta:hover {
+  transform: scale(1.25);
+  transition:
+    opacity   280ms cubic-bezier(0.45, 0, 0.55, 1),
+    transform 320ms cubic-bezier(0.34, 1.7, 0.5, 1);
+}
+.character.is-open .char-cta:hover {
+  transform: scale(2);
+}
+.char-cta:hover .char-cta-bubble {
+  background: var(--moss-deep);
+  box-shadow: 0 4px 14px rgba(58, 107, 74, 0.42);
+}
+.char-cta:hover::after { background: var(--moss-deep); }
+
+/* Tail — short rotated triangle tucked against the bubble's bottom-right.
+   Uses the same moss (--moss) as the backpack dot for visual consistency. */
 .char-cta::after {
   content: "";
   position: absolute;
@@ -1605,7 +1815,7 @@ body.playing-intro .grain {
   right: 0;
   width: 13px;
   height: 14px;
-  background: var(--moss-deep);
+  background: var(--moss);
   clip-path: polygon(0 0, 100% 0, 50% 100%);
   transform: rotate(-22deg);
   transition: background 280ms cubic-bezier(0.45, 0, 0.55, 1);
@@ -1623,7 +1833,7 @@ body.playing-intro .grain {
   padding: 3px 10px;
   min-width: 28px;
   height: 20px;
-  background: var(--moss-deep);
+  background: var(--moss);
   color: var(--paper);
   border-radius: 10px;
   box-shadow: 0 2px 6px rgba(58, 107, 74, 0.28);
@@ -1671,27 +1881,16 @@ body.playing-intro .grain {
 .character.is-open .char-cta-bubble::before { opacity: 0; transition-delay: 0ms; }
 .character.is-open .char-cta-bubble::after  { opacity: 1; transition-delay: 260ms; }
 
-/* ============ REVEAL ANIMATIONS ============ */
-
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 900ms var(--ease), transform 900ms var(--ease);
-  will-change: transform, opacity;
-}
-.reveal.in { opacity: 1; transform: translateY(0); }
-
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
-  .reveal, .event { opacity: 1 !important; transform: none !important; }
+  .event { opacity: 1 !important; transform: none !important; }
   .event-card,
   .event-title,
   .event-desc,
-  .event-brief,
   .event-kicker,
   .event-where,
   .event-icon,
@@ -1700,4 +1899,243 @@ body.playing-intro .grain {
   .event-tags {
     transform: none !important;
   }
+}
+
+/* =================================================================
+   ============ MOBILE REWORK — <=720px viewports ============
+   Consolidated mobile overrides sit at the end of the file so they
+   win any specificity ties with earlier rules.
+
+   Hero stage  : "Hi!" greeting up top, character slightly above
+                 centre, hint arrows hidden, tapping a head dot or
+                 the backpack dot pops the matching panel centred in
+                 the viewport where it's always fully readable.
+   Timeline    : spine centred under cards (see main.js cx override),
+                 cards full-width with generous padding, year
+                 separators equidistant between cards, character
+                 stuck to the bottom centre of the viewport and
+                 tappable to toggle the backpack panel.
+================================================================= */
+@media (max-width: 720px) {
+  /* ----- Character positioning ------------------------------ */
+  /* Default (timeline stage): pinned to the bottom centre. The
+     --char-anchor-offset that JS computes is zeroed here since
+     there's no "feet on final dot" math to satisfy at the bottom —
+     the character simply waits there while events scroll past. */
+  .character {
+    top: auto;
+    bottom: 20px;
+    --char-anchor-offset: 0px;
+    transform: translateX(-50%) scale(var(--char-scale, 1));
+    transform-origin: 50% 100%;
+    /* Make sure tap hits reach the dots; allow touch-action so the
+       panel open/close doesn't cancel page scroll gestures. */
+    touch-action: manipulation;
+  }
+  /* Hero stage AND intro cinematic: centered in the viewport (the
+     greeting sits above, dots frame the head). Uses the standard
+     translate(-50%, -50%) compose — same as the desktop default. */
+  body.hero-stage .character,
+  body.playing-intro .character {
+    top: 50%;
+    bottom: auto;
+    transform:
+      translateY(var(--char-anchor-offset, 0px))
+      translate(-50%, -50%)
+      scale(var(--char-scale, 1));
+    transform-origin: 50% 50%;
+  }
+
+  /* Hero greeting — anchored to the top of the viewport so the
+     character + dots have room below. Smaller type to fit phone
+     widths without breaking to two lines. */
+  .char-intro-bubble.hero-greeting {
+    top: calc(env(safe-area-inset-top, 0px) + 32px);
+    bottom: auto;
+    font-size: clamp(40px, 12vw, 68px);
+    line-height: 1;
+  }
+
+  /* Kill all hero hint arrows + labels on mobile — no room for
+     them, and they'd only clutter the viewport. The dots themselves
+     remain, acting as the sole affordance. */
+  .hero-skills-hint,
+  .hero-creative-hint,
+  .hero-technical-hint { display: none !important; }
+
+  /* ----- Hero content panels (creative / technical / skills) -----
+     On mobile we abandon the "anchored to dot" positioning and
+     instead float the open panel centered near the top of the
+     viewport where a thumb can easily close it with another tap on
+     the dot. All three panels share the same mobile layout. */
+  .char-bio,
+  .char-skills {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 92px);
+    bottom: auto;
+    left: 50%;
+    right: auto;
+    width: calc(100vw - 32px);
+    max-width: 420px;
+    max-height: calc(100vh - 220px);
+    transform-origin: center top;
+    transform: translateX(-50%) translateY(-14px) scale(0.94);
+    overflow-y: auto;
+  }
+  .character.is-open .char-skills,
+  .character.is-open-bio-creative .char-bio-creative,
+  .character.is-open-bio-technical .char-bio-technical {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  /* In hero stage the greeting claims the top — push the panels
+     down a bit further so they don't overlap. */
+  body.hero-stage .char-bio,
+  body.hero-stage .char-skills {
+    top: calc(env(safe-area-inset-top, 0px) + 140px);
+  }
+
+  /* The desktop skills panel is sized for 3-wide at 280px; loosen
+     it so it can grow to full-width on mobile. */
+  .char-skills { width: calc(100vw - 32px); max-width: 420px; }
+
+  /* ----- CTA speech bubble -------------------------------------
+     On mobile the character is anchored at the viewport bottom, so
+     the bubble floats just above the backpack on the character's
+     right (where the skills dot sits). Smaller + no scaling change
+     when open, since tap-targets handle everything. */
+  .char-cta {
+    top: -8px;
+    right: -4px;
+  }
+
+  /* ----- Hint dots — bigger tap targets on touch --------------- */
+  .char-hint::before { inset: -16px; }
+  /* Pulsing halo around the three hero head/backpack dots so they
+     read as interactive on mobile where there's no hover affordance. */
+  body.hero-stage .char-hint { animation: hintPulse 2s ease-out infinite; }
+
+  /* ----- Timeline column --------------------------------------- */
+  .timeline {
+    padding-left: 16px;
+    padding-right: 16px;
+    padding-bottom: calc(145px + 40px); /* room above the sticky char */
+  }
+
+  /* The bending spine now runs down the centre (see main.js cx
+     override) and sits BEHIND the cards so nothing looks like it
+     cuts through the card bodies. */
+  .timeline-spine { z-index: 0; }
+
+  /* Stacked layout: mark, then year, then card, one per row. Marks
+     sit on the spine (centred) and the card hangs full-width below.
+     Year reads as a small caption above the card's top edge on the
+     left. */
+  .event {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+    margin: 32px 0;
+  }
+  .event-mark {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: center;
+    margin-top: 0 !important;     /* ignore desktop --mark-align */
+    transform: translate(var(--bend-offset, 0px), 0) !important;
+  }
+  .event-year,
+  .event-left .event-year,
+  .event-right .event-year {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    padding: 0 4px;
+    margin-bottom: 0;
+    transform: none !important;
+  }
+  .event-card,
+  .event-left .event-card,
+  .event-right .event-card {
+    grid-column: 1;
+    grid-row: 3;
+    margin: 0;
+    padding: 20px 22px 18px;
+    text-align: left;
+    transform: none !important;
+    position: relative;
+    z-index: 1;                   /* above the centred spine */
+  }
+  .event-icon,
+  .event-left .event-icon,
+  .event-right .event-icon {
+    margin: 0 0 12px 0;
+    transform: none !important;
+  }
+  .event-title,
+  .event-kicker,
+  .event-where,
+  .event-desc,
+  .event-stat,
+  .event-tags {
+    transform: none !important;
+    text-align: left !important;
+  }
+  .event-desc,
+  .event-left .event-desc,
+  .event-right .event-desc {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: none;
+  }
+  .event-stats,
+  .event-stat,
+  .event-left .event-stat,
+  .event-right .event-stat,
+  .event-left .event-stats,
+  .event-right .event-stats {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  .event-tags,
+  .event-left .event-tags,
+  .event-right .event-tags {
+    justify-content: flex-start !important;
+  }
+
+  /* Year dividers — equal spacing above and below so the label
+     reads as a centred chapter break between two cards. */
+  .year-divider {
+    margin: clamp(32px, 5vh, 56px) 0;
+  }
+  .year-divider-label {
+    font-size: clamp(44px, 14vw, 72px);
+  }
+
+  /* ----- Footer oval on mobile — a bit tighter ---------------- */
+  .outro {
+    min-height: calc(50vh - 72px);
+    /* Leave room so the sticky character doesn't overlap the seal */
+    padding-bottom: calc(145px + 32px);
+  }
+  .outro-card { padding: 18px 32px 14px; min-width: 170px; }
+
+  /* ----- Backdrop blur not on mobile (character is full-screen
+           relative to small viewports so the blur looks odd) */
+  body.panels-open .hover-backdrop {
+    background: rgba(243, 237, 224, 0.4);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Phones narrower than 420 — tighten type + remove decorative
+     character rotations on open panels so content fits the viewport. */
+  .char-intro-bubble.hero-greeting {
+    font-size: clamp(36px, 11vw, 56px);
+  }
+  .event-card { padding: 16px 18px 14px; }
+  .event-title { font-size: clamp(22px, 6vw, 30px); }
 }

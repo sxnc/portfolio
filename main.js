@@ -1,9 +1,11 @@
 /* ================================================================
    Victor Künzig — timeline one-pager
 
-   · Walking character fixed at viewport centre. Age morphs at 2018.
-   · Parallel video branch (2018 → 2025) laid out in JS.
+   · Walking character fixed at viewport centre. Age morphs at the
+     midpoints of 2008 (baby ↔ teen) and 2018 (teen ↔ adult).
    · Per-event scroll progress drives layered scroll animations.
+   · Bending spine — SVG path rebuilt per scroll frame that leans
+     toward whichever event is closest to viewport centre.
    · Backpack inventory: starts full. Scrolling down past an event
      removes that event's skills (fly from bag → event); scrolling
      back up re-adds them (fly from event → bag).
@@ -22,7 +24,7 @@
     }
   }, { threshold: 0.15, rootMargin: '0px 0px -6% 0px' });
 
-  document.querySelectorAll('.reveal, .event').forEach(el => revealIO.observe(el));
+  document.querySelectorAll('.event').forEach(el => revealIO.observe(el));
 
   /* ---------- 2. Counters ----------
      Animate from 0 → target whenever the number enters the viewport,
@@ -70,12 +72,17 @@
   const character   = document.getElementById('character');
   const charPanel   = character ? character.querySelector('.char-skills') : null;
   const charBackpack = character ? character.querySelector('.char-backpack') : null;
-  const charHint    = character ? character.querySelector('.char-hint') : null;
+  const charHint    = character ? character.querySelector('.char-hint-skills') : null;
+  const charHintCreative  = character ? character.querySelector('.char-hint-creative')  : null;
+  const charHintTechnical = character ? character.querySelector('.char-hint-technical') : null;
+  const charBioCreative   = character ? character.querySelector('.char-bio-creative')   : null;
+  const charBioTechnical  = character ? character.querySelector('.char-bio-technical')  : null;
   const skillsGrid  = document.getElementById('char-skills-grid');
   const skillsCount = document.getElementById('char-count');
   const tabs        = Array.from(document.querySelectorAll('.char-skills-tabs button'));
 
-  const branchBottomEl = document.querySelector('[data-branch-anchor="bottom"]'); // 2018 Summer Love — teen ↔ adult threshold
+  const branchBottomEl = document.querySelector('[data-branch-anchor="bottom"]'); // 2018 Summer Love — teen ↔ adult threshold (upper neighbour)
+  const teenFloorEl    = document.querySelector('[data-teen-floor]');             // 2016 HSO       — teen ↔ adult threshold (lower neighbour)
   const schoolGateEl   = document.querySelector('[data-school-gate]');            // 2008 Minerva — school gate (baby hobbies boundary)
 
   /* ---------- 4. Skill registry ----------
@@ -108,7 +115,6 @@
     'safe':             { name: 'SAFe Agile',       cat: 'people', icon: 'chart-flow-1' },
     'delivery':         { name: 'Delivery Mgmt',    cat: 'people', icon: 'delivery-time' },
     'kpi':              { name: 'KPI Management',   cat: 'people', icon: 'chart-bar-graph' },
-    'it-security':      { name: 'IT Security',      cat: 'people', icon: 'shield-alt' },
     // ── CRAFT ─────────────────────────────────────────────────
     'video-prod':       { name: 'Video Production', cat: 'craft',  icon: 'video-alt' },
     'content-strategy': { name: 'Content Strategy', cat: 'craft',  icon: 'light-bulb' },
@@ -126,6 +132,8 @@
     // active while the character is in baby era (gated in main.js).
     'reading':          { name: 'Reading',          cat: 'hobby',  icon: 'read-book' },
     'cycling':          { name: 'Cycling',          cat: 'hobby',  icon: 'bicycle-alt-1' },
+    'photography':      { name: 'Photography',      cat: 'hobby',  icon: 'camera' },
+    'hiking':           { name: 'Hiking',           cat: 'hobby',  icon: 'tracking' },
     'electric-guitar':  { name: 'Electric Guitar',  cat: 'hobby',  icon: 'music-alt' },
     'skateboarding':    { name: 'Skateboarding',    cat: 'hobby',  icon: 'racings-wheel' },
     'video-games':      { name: 'Video Games',      cat: 'hobby',  icon: 'game-controller' },
@@ -288,77 +296,166 @@
   let extraGraceUntil = 0;
   const bumpCloseGrace = (ms) => { extraGraceUntil = Math.max(extraGraceUntil, Date.now() + ms); };
 
-  const openPanel  = () => {
+  /* Every panel that can "hold the pointer open" — any of these being
+     hovered during the close-grace cancels the close. */
+  const hoverableRefs = [charPanel, charHint, charHintCreative, charHintTechnical, charBioCreative, charBioTechnical];
+
+  /* Mutually exclusive panel state. Only one panel is open at a time;
+     opening one drops the others. `variant` is 'skills' | 'creative'
+     | 'technical'. */
+  const PANEL_CLASSES = {
+    skills:    'is-open',
+    creative:  'is-open-bio-creative',
+    technical: 'is-open-bio-technical',
+  };
+  const syncPanelsOpenClass = () => {
+    if (!character) return;
+    const any = Object.values(PANEL_CLASSES).some(cls => character.classList.contains(cls));
+    document.body.classList.toggle('panels-open', any);
+  };
+  const closeAllPanels = () => {
+    Object.values(PANEL_CLASSES).forEach(cls => character?.classList.remove(cls));
+    syncPanelsOpenClass();
+  };
+
+  const openPanel = () => openVariant('skills');
+
+  const openVariant = (variant) => {
     clearTimeout(hideTimer);
-    if (!character || character.classList.contains('is-open')) return;
-    // No inventory in baby era.
+    if (!character) return;
+    const cls = PANEL_CLASSES[variant];
+    if (!cls) return;
+    if (character.classList.contains(cls)) return;
+    // No interactions in baby era.
     if (character.classList.contains('is-baby')) return;
-    // Refresh per-category indices so the cascade-in animation on the
-    // char-skills follows the *current* visible grid order, not the
-    // order at panel-build time. Also strip any lingering just-added
-    // class (whose animation-delay uses --batch-i and would otherwise
-    // override the cascade ordering) and force a reflow so the browser
-    // restarts the animation cleanly every open.
-    renumberVisibleSkills();
-    if (skillsGrid) {
-      for (const el of skillsGrid.children) {
-        el.classList.remove('just-added');
-        el.style.animation = 'none';
-      }
-      void skillsGrid.offsetWidth;
-      for (const el of skillsGrid.children) {
-        el.style.animation = '';
+
+    if (variant === 'skills') {
+      // Refresh per-category indices so the cascade follows the
+      // current visible grid order, strip lingering just-added
+      // classes, and force an animation restart.
+      renumberVisibleSkills();
+      if (skillsGrid) {
+        for (const el of skillsGrid.children) {
+          el.classList.remove('just-added');
+          el.style.animation = 'none';
+        }
+        void skillsGrid.offsetWidth;
+        for (const el of skillsGrid.children) {
+          el.style.animation = '';
+        }
       }
     }
-    character.classList.add('is-open');
-    // Intro bubble stays visible alongside the backpack — the user
-    // wants both readable at once in the hero stage.
-    // Auto-switch if the tab that was active is now empty (can happen
-    // if the panel was opened after scrolling drained the category).
-    updateTabVisibility();
+
+    closeAllPanels();
+    character.classList.add(cls);
+    syncPanelsOpenClass();
+
+    if (variant === 'skills') {
+      // Reset to the first visible tab on every open.
+      if (tabs.length) {
+        tabs.forEach(b => b.classList.toggle('is-active', b === tabs[0]));
+        if (skillsGrid) skillsGrid.dataset.activeCat = tabs[0].dataset.cat;
+      }
+      updateTabVisibility();
+    }
   };
   const scheduleClose = () => {
     clearTimeout(hideTimer);
     const base = 260;
     const grace = Math.max(0, extraGraceUntil - Date.now());
     hideTimer = setTimeout(() => {
-      // If the pointer actually re-entered the panel/hint during the
-      // grace window, bail out of closing.
-      if (charPanel && charPanel.matches(':hover')) return;
-      if (charHint  && charHint.matches(':hover'))  return;
-      if (character && character.matches(':hover')) return;
-      character?.classList.remove('is-open');
+      // If the pointer actually re-entered any interactive surface
+      // during the grace window, bail out of closing.
+      for (const el of hoverableRefs) {
+        if (el && el.matches(':hover')) return;
+      }
+      // On the timeline the character body itself holds the panel
+      // open — the pointer can wander anywhere on the walking figure.
+      // In the hero stage (intro-mode) the three head/backpack dots
+      // live on the character too, but we want ONLY the dots and
+      // their opened containers to keep things open, so the pointer
+      // sitting on the character's cheek shouldn't lock a panel in.
+      const inHero = character && character.classList.contains('intro-mode');
+      if (!inHero && character && character.matches(':hover')) return;
+      closeAllPanels();
     }, base + grace);
   };
-  if (character && charPanel) {
-    character.addEventListener('mouseenter', openPanel);
-    character.addEventListener('mouseleave', scheduleClose);
-    charPanel.addEventListener('mouseenter', openPanel);
-    charPanel.addEventListener('mouseleave', scheduleClose);
-    character.addEventListener('focus', openPanel);
-    character.addEventListener('blur',  scheduleClose);
-  }
-  // The green hint dot has its own pointer handlers: hovering it opens
-  // the backpack panel + CTA bubble, and clicking toggles it explicitly.
-  // In intro mode it also dismisses the big "Hi..." speech bubble, so
-  // opening the backpack in the hero stage feels like a game UI swap.
-  if (charHint) {
-    charHint.addEventListener('mouseenter', openPanel);
-    charHint.addEventListener('mouseleave', scheduleClose);
-    charHint.addEventListener('click', (e) => {
+
+  const bindHover = (el, variant) => {
+    if (!el) return;
+    el.addEventListener('mouseenter', () => openVariant(variant));
+    el.addEventListener('mouseleave', scheduleClose);
+    // Focus-open for keyboard users.
+    el.addEventListener('focus', () => openVariant(variant));
+    el.addEventListener('blur',  scheduleClose);
+    el.addEventListener('click', (e) => {
       e.preventDefault();
-      if (character.classList.contains('is-open')) {
-        character.classList.remove('is-open');
+      const cls = PANEL_CLASSES[variant];
+      if (character.classList.contains(cls)) {
+        closeAllPanels();
       } else {
-        openPanel();
+        openVariant(variant);
+      }
+    });
+  };
+
+  if (character && charPanel) {
+    // Hovering the character body opens skills only on the timeline
+    // (intro-mode off). In the hero stage we want the hint dot to be
+    // the sole trigger so the character itself stays out of the way
+    // of the three dots on its head.
+    const onCharEnter = () => {
+      if (character.classList.contains('intro-mode')) return;
+      openVariant('skills');
+    };
+    character.addEventListener('mouseenter', onCharEnter);
+    character.addEventListener('mouseleave', scheduleClose);
+    charPanel.addEventListener('mouseenter', () => openVariant('skills'));
+    charPanel.addEventListener('mouseleave', scheduleClose);
+    character.addEventListener('focus', onCharEnter);
+    character.addEventListener('blur',  scheduleClose);
+
+    // Touch affordance — tapping the character body anywhere on the
+    // timeline toggles the skills panel. Ignored if the tap started
+    // on a hint dot, panel, bio card, or the CTA mailto link, since
+    // those have their own handlers. Only active outside intro-mode
+    // so the hero stage keeps its three-dot interaction model.
+    character.addEventListener('click', (e) => {
+      if (character.classList.contains('intro-mode')) return;
+      if (e.target.closest('.char-hint, .char-skills, .char-bio, .char-cta')) return;
+      if (character.classList.contains('is-open')) {
+        closeAllPanels();
+      } else {
+        openVariant('skills');
       }
     });
   }
+  bindHover(charHint,          'skills');
+  bindHover(charHintCreative,  'creative');
+  bindHover(charHintTechnical, 'technical');
 
-  /* ---------- 7. (legacy branch layout removed — single spine now) --- */
-  const layoutBranches = () => { /* no-op: there is no video branch */ };
+  // Tap-outside-to-close — on touch devices there's no "leave the
+  // panel" gesture, so any tap on the page that isn't inside a panel,
+  // dot, CTA, or character shuts everything. Desktop pointer users
+  // already close via hover-out; this is harmless for them.
+  document.addEventListener('pointerdown', (e) => {
+    if (!character) return;
+    if (e.target.closest('.char-hint, .char-skills, .char-bio, .char-cta, .character')) return;
+    closeAllPanels();
+  }, { passive: true });
 
-  /* ---------- 8. Bending timeline spine ----------
+  // The bio cards themselves keep the panel open while the pointer is
+  // over them (same contract as the skills panel).
+  if (charBioCreative) {
+    charBioCreative.addEventListener('mouseenter', () => openVariant('creative'));
+    charBioCreative.addEventListener('mouseleave', scheduleClose);
+  }
+  if (charBioTechnical) {
+    charBioTechnical.addEventListener('mouseenter', () => openVariant('technical'));
+    charBioTechnical.addEventListener('mouseleave', scheduleClose);
+  }
+
+  /* ---------- 7. Bending timeline spine ----------
      An SVG <path> rebuilt every scroll frame. The bulge is always
      centred on the character (viewport mid → timeline y). Its direction
      is a proximity-weighted blend of the nearby events' sides, so the
@@ -374,32 +471,82 @@
   const spineTrace = document.getElementById('spine-trace');
   const BEND_MAX   = 95;   // horizontal bulge amplitude, px
   const APPROACH   = 220;  // vertical ramp-in on each side of peak, px (wider = gentler)
-  const DIR_EASE   = 0.12; // per-frame EMA factor on bulge direction (smaller = gentler)
+  const DIR_EASE   = 0.2;  // per-frame EMA factor on bulge direction (smaller = gentler)
+  const BEND_EASE  = 0.28; // per-frame EMA on the final bend offset — second-stage smoothing
+  const DIR_REACH  = 1.0;  // direction sampling window, as fraction of vh (wider = smoother)
   const TOP_LOCK   = 8;    // spine must terminate at x=cx at this y (where the "Today" dot sits)
   const narrowMQ   = window.matchMedia('(max-width: 900px)');
 
   // Smoothed bulge direction across frames — gives a gentle ease when
   // the weighted event side changes sign (crossing between opposite-side
   // events), rather than snapping through zero.
-  let smoothedDir = 0;
+  // A second-stage EMA on the final bend offset (`smoothedBend`) filters
+  // out any residual high-frequency jitter left over after smoothedDir,
+  // which was the main source of visible wobble on fast scroll.
+  let smoothedDir  = 0;
+  let smoothedBend = 0;
 
-  // Per-event mark alignment offset (so the bulge peak sits next to the
-  // event's TITLE rather than its icon). Populated by measureMarkOffsets
-  // after layout is stable.
+  /* Split every event title into per-character <span> wrappers so the
+     shine animation can stagger letter-by-letter. Runs once on boot. */
+  const splitTitlesIntoChars = () => {
+    for (const ev of events) {
+      const title = ev.querySelector('.event-title');
+      if (!title || title.dataset.charsSplit === 'done') continue;
+      const text = title.textContent;
+      title.textContent = '';
+      title.style.setProperty('--char-count', text.length);
+      // Group characters inside .title-word wrappers so a line wrap
+      // never splits a word — the browser may only break at the
+      // whitespace tokens emitted between wrappers.
+      let idx = 0;
+      const tokens = text.split(/(\s+)/);
+      for (const token of tokens) {
+        if (token === '') continue;
+        if (/^\s+$/.test(token)) {
+          title.appendChild(document.createTextNode(token));
+          continue;
+        }
+        const wordEl = document.createElement('span');
+        wordEl.className = 'title-word';
+        for (const ch of token) {
+          const span = document.createElement('span');
+          span.className = 'title-char';
+          span.style.setProperty('--i', idx++);
+          span.textContent = ch;
+          wordEl.appendChild(span);
+        }
+        title.appendChild(wordEl);
+      }
+      title.dataset.charsSplit = 'done';
+    }
+  };
+
+  /* Mark alignment via layout-space offsetTop walk.
+     offsetTop is unaffected by CSS transforms, so we don't need to
+     compensate for the event / card / title / mark translate stack.
+     Result: the mark's post-transform rendered centre lands exactly on
+     the title's post-transform rendered centre, because both share the
+     same event-level translate and the mark's own -16*s matches the
+     card+title's combined -16*s.
+
+     Pure layout read — independent of scroll position — so we only
+     re-run this on layout-changing events (resize, font-load, boot),
+     never inside the per-frame scroll loop. */
   const measureMarkOffsets = () => {
     for (const ev of events) {
       const title = ev.querySelector('.event-title');
       const mark  = ev.querySelector('.event-mark');
       if (!title || !mark) continue;
-      // Measure the title's vertical centre relative to the event's
-      // own content box (since the mark spans all grid rows and starts
-      // at the event top). This makes the mark sit at the title's
-      // height regardless of whether the year label is above the card.
-      const eR = ev.getBoundingClientRect();
-      const tR = title.getBoundingClientRect();
-      const titleMid = (tR.top + tR.height * 0.5) - eR.top;
+      let titleY = 0;
+      let node = title;
+      while (node && node !== ev && ev.contains(node)) {
+        titleY += node.offsetTop;
+        node = node.offsetParent;
+      }
+      const titleCenter = titleY + title.offsetHeight * 0.5;
       const markHalf = mark.offsetHeight * 0.5;
-      ev.style.setProperty('--mark-align', (titleMid - markHalf).toFixed(1) + 'px');
+      const markAlign = titleCenter - markHalf;
+      ev.style.setProperty('--mark-align', markAlign.toFixed(1) + 'px');
     }
   };
 
@@ -413,7 +560,10 @@
       vbW = w; vbH = h;
     }
     const narrow = narrowMQ.matches;
-    const cx = narrow ? 28 : w / 2;
+    // On narrow layouts the spine runs straight down the middle of
+    // the timeline column (where the event marks now sit), rather
+    // than along a left rail.
+    const cx = w / 2;
     const vh = window.innerHeight;
     const mid = vh * 0.5;
     const tlRect = timeline.getBoundingClientRect();
@@ -441,7 +591,11 @@
     // falloff and a wide reach so several events contribute at once.
     // Then smoothed across frames (EMA) so the bulge eases gently into
     // its new direction instead of swinging through zero quickly.
-    const reach = vh * 0.6;
+    // A wider reach means more events contribute on any given frame,
+    // which smooths out the raw direction signal — on fast scroll this
+    // keeps it from spiking as individual events enter/exit a narrow
+    // sampling window.
+    const reach = vh * DIR_REACH;
     let sideSum = 0, weightSum = 0;
     for (const ev of events) {
       const mark = ev.querySelector('.event-mark');
@@ -461,7 +615,13 @@
       : 0;
     smoothedDir += (rawDir - smoothedDir) * DIR_EASE;
 
-    const bendOffset = narrow ? 0 : BEND_MAX * smoothedDir * fade;
+    // Second-stage EMA: smooth the final bend offset itself. Two
+    // cascaded first-order filters act as a cheap second-order filter,
+    // which kills the fast-scroll wobble that a single EMA left behind
+    // without adding much perceptual lag.
+    const rawBend = narrow ? 0 : BEND_MAX * smoothedDir * fade;
+    smoothedBend += (rawBend - smoothedBend) * BEND_EASE;
+    const bendOffset = smoothedBend;
 
     // Shared bulge function — used for each event mark's horizontal
     // offset, so dots always land on the curve. Matches the cubic
@@ -520,7 +680,7 @@
     }
   };
 
-  /* ---------- 9. Character visibility + era ---------- */
+  /* ---------- 8. Character visibility + era ---------- */
   const spawnLevelUpPopup = () => {
     if (!character || reduceMotion) return;
     const rect = character.getBoundingClientRect();
@@ -538,11 +698,14 @@
 
   /* Intro scroll handler — enlarges the character at the top of the
      page, scales it down to 1.0 as the user scrolls through the intro
-     zone, and fades the intro speech bubble + sky backdrop alongside it. */
-  const INTRO_SCALE_MAX = 2.2;
+     zone, and fades the hero heading alongside it. --intro-opacity is
+     also mirrored on body so arbitrary hero overlays (e.g. the
+     "check out my skills!" arrow) can track it via CSS var. */
+  /* Base char size bumped to 121×181, but the hero size should stay
+     as before (~213 px wide), so scale down to 213/121 ≈ 1.76. */
+  const INTRO_SCALE_MAX = 1.76;
   const introBubble = document.getElementById('char-intro-bubble');
   const introEl    = document.querySelector('.intro');
-  const skyEl      = document.getElementById('sky');
   const updateIntroScale = () => {
     if (!character) return;
     const vh = window.innerHeight;
@@ -550,36 +713,24 @@
     const p = introEnd > 0 ? Math.min(1, Math.max(0, window.scrollY / introEnd)) : 1;
     const scale = INTRO_SCALE_MAX + (1 - INTRO_SCALE_MAX) * p;
     character.style.setProperty('--char-scale', scale.toFixed(3));
-    character.classList.toggle('intro-mode', p < 0.55);
+    const inHero = p < 0.55;
+    character.classList.toggle('intro-mode', inHero);
+    // Body mirror of intro-mode so CSS can gate effects (e.g. the
+    // backdrop blur) without a :has() query on the character.
+    document.body.classList.toggle('hero-stage', inHero);
+    // "Peak" of the hero stage — only the last sliver of the intro
+    // zone (near scrollY = 0). This is the gate for the waving
+    // animation, which should only play once the user is almost all
+    // the way to the top — not across the whole intro fade range.
+    const atHeroPeak = p < 0.1;
+    character.classList.toggle('is-hero-peak', atHeroPeak);
+    const op = Math.max(0, 1 - p * 1.4);
+    document.body.style.setProperty('--intro-opacity', op.toFixed(3));
     if (introBubble) {
-      const op = Math.max(0, 1 - p * 1.4);
       introBubble.style.setProperty('--intro-opacity', op.toFixed(3));
       introBubble.classList.toggle('is-hidden', op <= 0.02);
     }
-    if (skyEl) {
-      const op = Math.max(0, 1 - p * 1.2);
-      skyEl.style.setProperty('--sky-opacity', op.toFixed(3));
-    }
   };
-
-  /* Time-of-day classification for the hero sky. Pulled from the
-     user's local clock. Just two buckets (day/night) — the sky is
-     outline line art with no colour wash, so dawn/dusk don't need
-     their own visual. The #sky element's data-time attr drives
-     sun/moon/cloud/star visibility in CSS. */
-  const classifyTime = () => {
-    const h = new Date().getHours();
-    return (h >= 7 && h < 20) ? 'day' : 'night';
-  };
-  if (skyEl) {
-    skyEl.dataset.time = classifyTime();
-    // Re-check every 10 minutes in case the page sits open across
-    // dawn/dusk boundaries.
-    setInterval(() => {
-      const t = classifyTime();
-      if (skyEl.dataset.time !== t) skyEl.dataset.time = t;
-    }, 600000);
-  }
 
   let bootedEra = false;
   /* Three-stage era detection, tied to two boundaries:
@@ -592,7 +743,21 @@
     if (!character || !timeline) return;
     const rect = timeline.getBoundingClientRect();
     const mid = window.innerHeight * 0.5;
-    const inside = rect.bottom > mid - 20;
+    // Keep the character visible a bit past the timeline's end, so the
+    // baby variant doesn't pop off-screen the moment the 1986 dot is
+    // just above viewport mid.
+    const inside = rect.bottom > mid - 160;
+
+    // Once viewport mid scrolls past the point where the character's
+    // feet would be below the bottom dot (dot sits at timeline.bottom
+    // because of .timeline-start { bottom: -9 }), pull the character
+    // upward by the overshoot so its feet rest on the dot.
+    // Use offsetHeight (layout box, pre-transform) rather than
+    // getBoundingClientRect so the scaled hero-stage doesn't change the
+    // anchor math — we always anchor to the character's CSS height.
+    const charHalfHeight = character.offsetHeight * 0.5;
+    const anchorOffset = Math.min(0, rect.bottom - mid - charHalfHeight);
+    character.style.setProperty('--char-anchor-offset', anchorOffset.toFixed(2) + 'px');
     character.classList.toggle('is-visible', inside);
 
     const wasBaby  = character.classList.contains('is-baby');
@@ -619,11 +784,24 @@
       else if (bc > mid + ERA_HY) isBaby = false;
     }
 
-    // Summer-Love gate — teen era ceiling (same hysteresis)
+    // Teen-era ceiling — fires at the MIDPOINT between Summer Love (2018)
+    // and HSO Leadership (2016), which is where the 2018 year-divider
+    // sits. Mirrors the baby gate, which uses the midpoint between Born
+    // and Minerva. Falls back to Summer Love alone if the floor anchor
+    // is missing.
     let summerPassed = wasYoung || wasBaby;
     if (branchBottomEl) {
-      const sR = branchBottomEl.getBoundingClientRect();
-      const sc = sR.top + sR.height * 0.5;
+      let sc;
+      if (teenFloorEl) {
+        const sR = branchBottomEl.getBoundingClientRect();
+        const fR = teenFloorEl.getBoundingClientRect();
+        const summerY = sR.top + sR.height * 0.5;
+        const floorY  = fR.top + fR.height * 0.5;
+        sc = (summerY + floorY) * 0.5;
+      } else {
+        const sR = branchBottomEl.getBoundingClientRect();
+        sc = sR.top + sR.height * 0.5;
+      }
       if (sc < mid - ERA_HY) summerPassed = true;
       else if (sc > mid + ERA_HY) summerPassed = false;
     }
@@ -633,8 +811,8 @@
     character.classList.toggle('is-young', isYoung);
     // Baby has no inventory — force the panel closed if the era
     // change catches it open.
-    if (isBaby && character.classList.contains('is-open')) {
-      character.classList.remove('is-open');
+    if (isBaby) {
+      closeAllPanels();
     }
 
     const newLevel = isBaby ? 0 : isYoung ? 1 : 2;
@@ -644,7 +822,7 @@
     bootedEra = true;
   };
 
-  /* ---------- 10. Per-event scroll-linked transforms ---------- */
+  /* ---------- 9. Per-event scroll-linked transforms ---------- */
   const applyScroll = () => {
     if (reduceMotion) return;
     const vh = window.innerHeight;
@@ -663,7 +841,7 @@
     }
   };
 
-  /* ---------- 11. Skill fly animations ---------- */
+  /* ---------- 10. Skill fly animations ---------- */
 
   const flyElement = (fromRect, toRect, iconClass, label, onArrive) => {
     const clone = document.createElement('span');
@@ -785,7 +963,7 @@
     if (!animate || reduceMotion) updateCount();
   };
 
-  /* ---------- 12. Bidirectional collection ----------
+  /* ---------- 11. Bidirectional collection ----------
      Hysteresis buffer around viewport midline so tiny scroll jitter
      doesn't toggle states. */
   const HY = 36;
@@ -885,7 +1063,9 @@
     updateBabyHobbies(!initial);
   };
 
-  /* ---------- 13. rAF-throttled scroll loop ---------- */
+  /* ---------- 12. rAF-throttled scroll loop ----------
+     Mark offsets are NOT measured here — they depend only on layout,
+     not scroll, so we re-measure in onResize() / on font-load instead. */
   let ticking = false;
   const onScroll = () => {
     if (ticking) return;
@@ -893,16 +1073,15 @@
     requestAnimationFrame(() => {
       updateIntroScale();
       updateCharacter();
-      applyScroll();   // set per-event --s *before* measuring mark positions
+      applyScroll();
       buildSpine();
       updateCollection(false);
       ticking = false;
     });
   };
 
-  /* ---------- 15. Boot ---------- */
+  /* ---------- 13. Boot ---------- */
   const onResize = () => {
-    layoutBranches();
     measureMarkOffsets();
     onScroll();
   };
@@ -913,9 +1092,12 @@
   // Initial populate: count reflects "all skills in backpack"
   updateCount();
 
+  // Split each event title into per-character spans so the shine
+  // animation can stagger letter-by-letter. Runs once, up front.
+  splitTitlesIntoChars();
+
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(() => {
-      layoutBranches();
       measureMarkOffsets();
       updateCollection(true); // silent seed based on current scroll
       onScroll();
@@ -926,7 +1108,6 @@
 
   window.addEventListener('load', onResize);
 
-  layoutBranches();
   measureMarkOffsets();
   onScroll();
 
@@ -999,19 +1180,29 @@
   };
 
   /* Unlocks the intro speech bubble with a little pop after the
-     auto-scroll lands at the top (or after the user cancels it). */
+     auto-scroll lands at the top (or after the user cancels it).
+     About half a second later we also set body.hero-revealed, which
+     is the gate the hero hint dots + arrow labels use — so the
+     greeting lands first, then the dots/arrows fade in after it. */
   const revealIntroBubble = () => {
     if (!introBubble) return;
     introBubble.classList.remove('is-intro-held');
     introBubble.classList.add('is-intro-revealed');
-    // Scroll-driven opacity can keep it visible from here on.
     onScroll();
+    setTimeout(() => document.body.classList.add('hero-revealed'), 520);
   };
 
   const playIntro = async () => {
     if (!introCurtain) return;
-    if (reduceMotion) {
+    // Opt-out paths: #skip in the URL, or the user's reduced-motion
+    // preference. Either way, dismantle the curtain and leave the
+    // intro bubble in its normal scroll-driven state.
+    const skipViaHash = /^#skip\b/i.test(window.location.hash || '');
+    if (reduceMotion || skipViaHash) {
       introCurtain.remove();
+      introBubble?.classList.remove('is-intro-held');
+      // No cinematic to wait for — reveal the hints now.
+      document.body.classList.add('hero-revealed');
       return;
     }
 

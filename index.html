@@ -13,12 +13,14 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fraunces:opsz,wght,SOFT@9..144,300..900,0..100&family=Caveat:wght@400..700&display=swap" rel="stylesheet" />
 
   <!-- IcoFont (2100+ icons, font-based) — used for event markers + backpack skills -->
   <link href="https://cdn.jsdelivr.net/npm/icofont/dist/icofont.min.css" rel="stylesheet" />
 
-  <link rel="stylesheet" href="styles.css" />
+  <!-- The querystring forces a cache-miss when I ship CSS updates.
+       Bump it whenever styles.css changes meaningfully. -->
+  <link rel="stylesheet" href="styles.css?v=20260423ag" />
 </head>
 <body>
 
@@ -35,104 +37,41 @@
     </span>
   </div>
 
-  <!-- =================== PAPER / GRAIN TEXTURE ===================
-       Three stacked layers for depth:
-       · fiber  — large-scale directional fibres (overlay)
-       · mottle — soft coloured patches, paper aging (multiply)
-       · grain  — fine film/noise (multiply)
-  ========================================================= -->
-  <div class="paper-fiber"  aria-hidden="true"></div>
-  <div class="paper-mottle" aria-hidden="true"></div>
-  <div class="grain"        aria-hidden="true"></div>
+  <!-- Faint notebook-style grid that fills the page behind the
+       character. The cream body colour already carries the warmth
+       we used to layer paper/grain texture on top of, so the grid
+       is the only background element now. -->
+  <div class="intro-grid" aria-hidden="true"></div>
 
-  <!-- =================== SVG ICON SPRITE =================== -->
+  <!-- Fixed overlay that applies a backdrop-blur to the page content
+       whenever the character has a panel open (skills / creative /
+       technical). The character and its panels are above this layer
+       (z-index 70+) so they stay sharp; everything behind it blurs. -->
+  <div class="hover-backdrop" aria-hidden="true"></div>
+
+  <!-- =================== SVG DEFS ===================
+       Shared markers + filters that aren't actually drawn here —
+       referenced by url(#…) from paths and CSS filter properties. -->
   <svg class="sprite" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
     <defs>
-      <symbol id="ico-computer" viewBox="0 0 24 24">
-        <rect x="4" y="5" width="16" height="11" rx="1.5"/>
-        <path d="M2 19h20"/>
-        <path d="M10 8l-2 2 2 2M14 8l2 2-2 2"/>
-      </symbol>
-      <symbol id="ico-team" viewBox="0 0 24 24">
-        <circle cx="12" cy="7" r="3"/>
-        <path d="M6 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1"/>
-        <circle cx="5" cy="10" r="2"/>
-        <circle cx="19" cy="10" r="2"/>
-      </symbol>
-      <symbol id="ico-cto" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9"/>
-        <path d="M15.5 8.5L13 13l-4.5 2.5L11 11l4.5-2.5z"/>
-      </symbol>
-      <symbol id="ico-po" viewBox="0 0 24 24">
-        <rect x="3" y="4" width="18" height="16" rx="1.5"/>
-        <path d="M9 4v16M15 4v16"/>
-        <path d="M5 8h2M5 12h2M11 8h2M11 14h2M17 8h2M17 11h2"/>
-      </symbol>
-      <symbol id="ico-camera" viewBox="0 0 24 24">
-        <rect x="2" y="7" width="14" height="11" rx="2"/>
-        <path d="M16 11l6-3v9l-6-3z"/>
-        <circle cx="7" cy="12.5" r="1.2"/>
-      </symbol>
-      <symbol id="ico-slate" viewBox="0 0 24 24">
-        <rect x="2" y="8" width="20" height="12" rx="1.5"/>
-        <path d="M2 12h20"/>
-        <path d="M5 8l-1-3 4 .5 1 3zM11 8.5l-1-3 4 .5 1 3zM17 8.5l-1-3 4 .5 1 3z"/>
-      </symbol>
-      <symbol id="ico-film" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="9"/>
-        <circle cx="12" cy="12" r="2.2"/>
-        <circle cx="5.5" cy="12" r="1.4"/>
-        <circle cx="18.5" cy="12" r="1.4"/>
-        <circle cx="12" cy="5.5" r="1.4"/>
-        <circle cx="12" cy="18.5" r="1.4"/>
-      </symbol>
-      <symbol id="ico-play" viewBox="0 0 24 24">
-        <rect x="3" y="5" width="18" height="14" rx="3"/>
-        <path d="M10.5 9.2l4.5 2.8-4.5 2.8V9.2z"/>
-      </symbol>
-      <symbol id="ico-broadcast" viewBox="0 0 24 24">
-        <circle cx="12" cy="12" r="2"/>
-        <path d="M8.5 8.5a5 5 0 0 0 0 7"/>
-        <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
-        <path d="M5.5 5.5a9 9 0 0 0 0 13"/>
-        <path d="M18.5 5.5a9 9 0 0 1 0 13"/>
-      </symbol>
-      <symbol id="ico-code" viewBox="0 0 24 24">
-        <path d="M8 7l-5 5 5 5M16 7l5 5-5 5M14 5l-4 14"/>
-      </symbol>
-      <symbol id="ico-cap" viewBox="0 0 24 24">
-        <path d="M2 9l10-4 10 4-10 4L2 9z"/>
-        <path d="M6 11v4c0 .8 2.7 3 6 3s6-2.2 6-3v-4"/>
-        <path d="M22 9v5"/>
-      </symbol>
-      <symbol id="ico-sparkle" viewBox="0 0 24 24">
-        <path d="M12 3v18M3 12h18"/>
-        <path d="M6 6l12 12M18 6L6 18"/>
-      </symbol>
-      <symbol id="ico-pulse" viewBox="0 0 24 24">
-        <path d="M3 12h4l2-6 3 12 2-8 2 2h5"/>
-      </symbol>
-      <symbol id="ico-cloud" viewBox="0 0 24 24">
-        <path d="M7 18h11a4 4 0 0 0 0-8 6 6 0 0 0-11.3-2A4.5 4.5 0 0 0 7 18z"/>
-      </symbol>
-      <symbol id="ico-shield" viewBox="0 0 24 24">
-        <path d="M12 3l8 3v6c0 5-3.5 8.5-8 9-4.5-.5-8-4-8-9V6l8-3z"/>
-        <path d="M9 12l2 2 4-4"/>
-      </symbol>
-      <symbol id="ico-chart" viewBox="0 0 24 24">
-        <path d="M4 4v16h16"/>
-        <rect x="8" y="12" width="2.5" height="5"/>
-        <rect x="12" y="8" width="2.5" height="9"/>
-        <rect x="16" y="14" width="2.5" height="3"/>
-      </symbol>
-      <symbol id="ico-book" viewBox="0 0 24 24">
-        <path d="M4 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4V4z"/>
-        <path d="M20 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6V4z"/>
-      </symbol>
-      <symbol id="ico-pen" viewBox="0 0 24 24">
-        <path d="M4 20h4L20 8l-4-4L4 16v4z"/>
-        <path d="M14 6l4 4"/>
-      </symbol>
+      <!-- Shared arrowhead marker. Open stroked V (not a filled
+           triangle), matching the hand-drawn feel. orient="auto"
+           aligns the marker's +x axis with the path's end-tangent, so
+           the V always points along the direction of travel. refX=10
+           places the tip exactly on the path's end point;
+           markerUnits="userSpaceOnUse" keeps the marker's stroke width
+           consistent with the path's own. Stroke is an explicit moss
+           hex (rather than currentColor) because some browsers don't
+           resolve currentColor from the referring element in a marker
+           — hard-coding it keeps the tip the same green as the arrow. -->
+      <marker id="hint-arrow-tip"
+              viewBox="0 0 12 12" refX="10" refY="6"
+              markerWidth="14" markerHeight="14"
+              orient="auto" markerUnits="userSpaceOnUse">
+        <path d="M 2 2 L 10 6 L 2 10"
+              fill="none" stroke="#2b5339" stroke-width="2.4"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
 
       <!-- Fills the walking character's transparent interior with cream so
            the timeline spine is fully hidden behind the silhouette. Uses
@@ -152,31 +91,10 @@
   </svg>
 
   <!-- =================== INTRO ===================
-       Tall scroll zone behind the big fixed .character. A decorative
-       "sky" layer sits behind Victor during the hero: sun/moon + clouds
-       during the day, moon + stars at night. Derived from the user's
-       local clock in main.js — no API needed.
+       Tall scroll zone behind the big fixed .character. No decorative
+       backdrop — the character and hero greeting carry the stage.
   ======================================================== -->
-  <header class="intro">
-    <div class="sky" id="sky" aria-hidden="true">
-      <div class="sky-bg"></div>
-      <span class="sky-sun"></span>
-      <span class="sky-moon">
-        <span class="sky-crater sky-crater-1"></span>
-        <span class="sky-crater sky-crater-2"></span>
-        <span class="sky-crater sky-crater-3"></span>
-      </span>
-      <span class="sky-star sky-star-1"></span>
-      <span class="sky-star sky-star-2"></span>
-      <span class="sky-star sky-star-3"></span>
-      <span class="sky-star sky-star-4"></span>
-      <span class="sky-star sky-star-5"></span>
-      <span class="sky-star sky-star-6"></span>
-      <span class="sky-cloud sky-cloud-1"></span>
-      <span class="sky-cloud sky-cloud-2"></span>
-      <span class="sky-cloud sky-cloud-3"></span>
-    </div>
-  </header>
+  <header class="intro"></header>
 
   <!-- =================== TIMELINE =================== -->
   <main class="timeline" id="timeline">
@@ -197,46 +115,46 @@
       <path class="spine-trace" id="spine-trace"/>
     </svg>
 
-    <!-- 2025 · EVERYWOW AG -->
-    <article class="event event-major event-left" data-parallax="0.09" data-skills="ai claude-code prompt-eng llm-tools automation python video-prod post-prod livestream talent-coach">
+    <article class="event event-major event-left" data-skills="ai claude-code prompt-eng llm-tools automation python video-prod post-prod livestream talent-coach">
       <div class="event-mark"></div>
-      <div class="event-year">May 2025</div>
+      <div class="event-year">May</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-video-clapper" aria-hidden="true"></i></span>
         <span class="event-kicker">Senior Producer</span>
         <h3 class="event-title">EVERYWOW AG</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
-          <em>Passion and profession finally merged.</em> Full production
-          lifecycle for corporate videos: brief, shoot, talent coaching,
-          post supervision. International livestream events and co-host of
-          the <a href="https://www.youtube.com/@wowhappenspodcast" target="_blank" rel="noopener">WOW Happens podcast</a>.
-          Introduced and built production workflows and guidelines. Most
-          of the work is visible on the <a href="https://www.everywow.ch/en/portfolio/" target="_blank" rel="noopener">EVERYWOW portfolio</a>.
+          Worked on corporate video productions, covering the full lifecycle from: briefing, shooting, directing, and post-production supervision. I also co-hosted the <a href="https://www.youtube.com/@wowhappenspodcast" target="_blank" rel="noopener">WOW Happens podcast</a> and <a href="https://www.youtube.com/@everywow/videos" target="_blank" rel="noopener">EVERYWOW Masterclass</a> livestreams.
+        </p>
+        <p class="event-desc">
+          Take a look at the work: <a href="https://www.everywow.ch/en/portfolio/" target="_blank" rel="noopener">EVERYWOW portfolio</a>.
         </p>
         <div class="event-stat">
           <span class="event-stat-num" data-count-to="100" data-suffix="+">0</span>
-          <span class="event-stat-cap">videos produced with the team</span>
+          <span class="event-stat-cap">videos produced</span>
         </div>
-        <ul class="event-tags">
-          <li>Video Production</li><li>Livestream</li>
-        </ul>
+        <ul class="event-tags"><li>Producing</li><li>Video Production</li><li>Livestream</li></ul>
       </div>
     </article>
 
-    <!-- 2021 · YouTube channel -->
-    <article class="event event-major event-right" data-parallax="0.1" data-skills="video-edit thumbnail content-strategy storytelling">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2025</span></div>
+
+    <article class="event event-major event-right" data-skills="video-edit thumbnail content-strategy storytelling">
       <div class="event-mark"></div>
-      <div class="event-year">2021</div>
+      <div class="event-year">January</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-youtube-play" aria-hidden="true"></i></span>
-        <span class="event-kicker">Solo channel</span>
-        <h3 class="event-title">Launched my own YouTube Channel</h3>
-        <p class="event-where">Tech · keyboards · home theatre</p>
+        <span class="event-kicker">YouTube Creator</span>
+        <h3 class="event-title">Cheese Turbulence</h3>
+        <p class="event-where">Aarau</p>
         <p class="event-desc">
-          End-to-end by me: script, shoot, edit, motion graphics,
-          thumbnail, promotion. A full production company fitted inside
-          one pair of hands. <em>Channel name shared on request.</em>
+          My passion for storytelling and video creation finally reached its peak and I launched my very own YouTube channel. Covering niche tech products in polished, in-depth video reviews with a hint of sarcasm and the occasional, questionable joke.
+        </p>
+        <p class="event-desc">
+          Have a look at <a href="https://www.youtube.com/cheeseturbulence" target="_blank" rel="noopener">my channel</a>, and as they say, Like & Subscribe. ;)
+        </p>
+        <p class="event-desc">
+          Or check out <a href="https://www.cheeseturbulence.com" target="_blank" rel="noopener">cheeseturbulence.com</a> for written reviews (coming soon).
         </p>
         <div class="event-stats">
           <div class="event-stat">
@@ -248,316 +166,282 @@
             <span class="event-stat-cap">total views</span>
           </div>
         </div>
-        <ul class="event-tags">
-          <li>Writing</li><li>Filming</li><li>Community Building</li>
-        </ul>
+        <ul class="event-tags"><li>Writing</li><li>Filming</li><li>Community Building</li></ul>
       </div>
     </article>
 
-    <!-- 2020 · Captain Flush (short film) -->
-    <article class="event event-major event-right" data-parallax="0.06" data-skills="screenwriting">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2021</span></div>
+
+    <article class="event event-major event-right" data-skills="screenwriting">
       <div class="event-mark"></div>
-      <div class="event-year">2020</div>
+      <div class="event-year">September</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-film" aria-hidden="true"></i></span>
-        <span class="event-kicker">Short film</span>
+        <span class="event-kicker">Zürich Film Festival · ZFF72</span>
         <h3 class="event-title">"Captain Flush"</h3>
-        <p class="event-where">Zürich Film Festival</p>
+        <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Nominated and shortlisted at ZFF's short film competition.
+          A short film I wrote and directed with my friends for the 2020 ZFF72, where the subject was "Hero". This story followed "Captain Flush", an often misunderstood hero, whom we've all depended on at some point in our lives.
+        </p>
+        <p class="event-desc">
+          Watch the full flush <a href="https://youtu.be/ry9ygkaLPRw" target="_blank" rel="noopener">here</a>.
         </p>
         <div class="event-stat">
-          <span class="event-stat-num" data-count-to="10">0</span>
-          <span class="event-stat-cap">Top 10 at ZFF Shorts</span>
+          <span class="event-stat-num">Shortlisted</span>
+          <span class="event-stat-cap">Shown at award night</span>
         </div>
-        <ul class="event-tags">
-          <li>Writing</li><li>Directing</li><li>Filmmaking</li>
-        </ul>
+        <ul class="event-tags"><li>Writing</li><li>Directing</li><li>Filmmaking</li></ul>
       </div>
     </article>
 
-    <!-- Sep 2019 · Pandora's Box (short film) -->
-    <article class="event event-major event-right" data-parallax="0.06">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2020</span></div>
+
+    <article class="event event-major event-right">
       <div class="event-mark"></div>
-      <div class="event-year">Sep 2019</div>
+      <div class="event-year">September</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-film" aria-hidden="true"></i></span>
-        <span class="event-kicker">Short film</span>
+        <span class="event-kicker">Talent Screen Short Film Festival</span>
         <h3 class="event-title">"Pandora's Box"</h3>
-        <p class="event-where">Talent Screen Short Film Festival</p>
+        <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Submitted with friends. Didn't win, but it was a blast to
-          shoot and one of the projects I still remember fondly.
+          A 3-minute short I wrote, directed, and starred in together with my friends. The subject was "Pandora's Box" and what might happen if we dared to open it (spoilers: we didn't find out...).
         </p>
-        <ul class="event-tags">
-          <li>Writing</li><li>Directing</li><li>Filmmaking</li>
-        </ul>
+        <p class="event-desc">
+          Watch the attempted unboxing <a href="https://youtu.be/xlXg3_0f5Xw" target="_blank" rel="noopener">here</a>.
+        </p>
+        <ul class="event-tags"><li>Writing</li><li>Directing</li><li>Filmmaking</li></ul>
       </div>
     </article>
 
-    <!-- Sep 2019 · Hack Inc. (short film) -->
-    <article class="event event-major event-right" data-parallax="0.06">
+    <article class="event event-major event-right">
       <div class="event-mark"></div>
-      <div class="event-year">Sep 2019</div>
+      <div class="event-year">September</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-film" aria-hidden="true"></i></span>
-        <span class="event-kicker">Short film</span>
+        <span class="event-kicker">Zürich Film Festival · ZFF72</span>
         <h3 class="event-title">"Hack Inc."</h3>
-        <p class="event-where">Zürich Film Festival · ZFF72</p>
+        <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Submitted to the ZFF72 shorts programme. Same crew, same
-          energy, one more trip around the filmmaking loop.
+          The topic of the 2019 ZFF72 was "Hacking". In this short, a fictional company actually offers hacking services (lousy premise, I know). It was a fun little short I wrote, directed, and forced my friends to star in.
         </p>
-        <ul class="event-tags">
-          <li>Writing</li><li>Directing</li><li>Filmmaking</li>
-        </ul>
+        <p class="event-desc">
+          Get hacked <a href="https://youtu.be/7ya34WbK_rc" target="_blank" rel="noopener">here</a>.
+        </p>
+        <ul class="event-tags"><li>Writing</li><li>Directing</li><li>Filmmaking</li></ul>
       </div>
     </article>
 
-    <!-- 2019 · SRF PLAY Backend -->
-    <article class="event event-major event-left" data-parallax="0.08" data-skills="aws streaming-infra safe stakeholder reading cycling">
+    <article class="event event-major event-left" data-skills="aws streaming-infra safe stakeholder reading cycling">
       <div class="event-mark"></div>
-      <div class="event-year">Sep 2019</div>
+      <div class="event-year">September</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-network-tower" aria-hidden="true"></i></span>
         <span class="event-kicker">Product Owner / Manager</span>
-        <h3 class="event-title">SRF PLAY Backend</h3>
-        <p class="event-where">Schweizer Radio und Fernsehen · Zürich</p>
+        <h3 class="event-title">Schweizer Radio und Fernsehen (SRF)</h3>
+        <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Led the streaming-platform backend team for Switzerland's
-          national broadcaster. Drove the migration to AWS S3 and
-          coordinated across SRF, RTS, RSI, RTR, Akamai and Azure
-          inside a SAFe environment.
+          I led the team for Switzerland's national streaming platform's backend system and infrastructure. Coordinated and managed the migration to the cloud and collaborated with the other business units inside a large-scale SAFe environment.
+        </p>
+        <p class="event-desc">
+          In my last year at SRF, I also managed and coordinated the traffic management systems, and led initiatives to digitalize the workflows for all video productions and lifecycles online.
         </p>
         <div class="event-stat">
           <span class="event-stat-num" data-count-to="100" data-suffix="k+">0</span>
           <span class="event-stat-cap">videos migrated</span>
         </div>
-        <ul class="event-tags">
-          <li>Product Management</li><li>SAFe Agile</li><li>Cloud Migration</li><li>Stakeholder Management</li>
-        </ul>
+        <ul class="event-tags"><li>Product Management</li><li>SCRUM</li><li>SAFe</li></ul>
       </div>
     </article>
 
-    <!-- 2018 · CTO · Amazee Labs AG -->
-    <article class="event event-major event-left" data-parallax="0.09" data-skills="it-security kpi performance-coach">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2019</span></div>
+
+    <article class="event event-major event-left" data-skills="kpi performance-coach photography">
       <div class="event-mark"></div>
-      <div class="event-year">Aug 2018</div>
+      <div class="event-year">August</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-compass" aria-hidden="true"></i></span>
         <span class="event-kicker">Chief Technology Officer</span>
         <h3 class="event-title">Amazee Labs AG</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Moved into the CTO chair to turn company strategy into
-          something that actually shipped: coaching conversations,
-          performance reviews, and the kind of quiet decisions that
-          hold a growing company together.
+          Led the technical teams at the Zürich offices of Amazee Labs and coordinated with the US and South African based business units to align the technical and strategic services.
         </p>
         <div class="event-stat">
           <span class="event-stat-num" data-count-to="24">0</span>
           <span class="event-stat-cap">people reporting in</span>
         </div>
-        <ul class="event-tags">
-          <li>Leadership</li><li>Management</li>
-        </ul>
+        <ul class="event-tags"><li>Leadership</li><li>Management</li><li>Strategy</li></ul>
       </div>
     </article>
 
-    <!-- 2018 · The Riddle (short film) -->
-    <article class="event event-major event-right" data-parallax="0.06">
+    <article class="event event-major event-right">
       <div class="event-mark"></div>
-      <div class="event-year">2018</div>
+      <div class="event-year">September</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-film" aria-hidden="true"></i></span>
-        <span class="event-kicker">Short film</span>
+        <span class="event-kicker">Talent Screen Short Film Festival</span>
         <h3 class="event-title">"The Riddle"</h3>
-        <p class="event-where">Talent Screen Short Film Competition</p>
+        <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Nominated and shortlisted.
+          Wrote, directed, and starred in this nominated short film for the Talent Screen Short Film Festival in 2018.
         </p>
-        <ul class="event-tags">
-          <li>Writing</li><li>Directing</li><li>Filmmaking</li>
-        </ul>
+        <p class="event-desc">
+          This had a special premise: a single, locked-off camera to tie an entire conversation together. Watch the nauseating short <a href="https://youtu.be/VkUmpNDwKeI" target="_blank" rel="noopener">here</a>.
+        </p>
+        <div class="event-stat">
+          <span class="event-stat-num">Winner</span>
+          <span class="event-stat-cap">Förderpreis</span>
+        </div>
+        <ul class="event-tags"><li>Writing</li><li>Directing</li><li>Filmmaking</li></ul>
       </div>
     </article>
 
-    <!-- 2018 · Summer Love — 2018 era gate (was the branch-bottom anchor).
-         data-branch-anchor stays for the teen ↔ adult character morph. -->
-    <article class="event event-major event-right" data-parallax="0.09" data-branch-anchor="bottom" data-skills="directing cinematography">
+    <article class="event event-major event-right" data-branch-anchor="bottom" data-skills="directing cinematography">
       <div class="event-mark"></div>
-      <div class="event-year">2018</div>
+      <div class="event-year">July</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-film" aria-hidden="true"></i></span>
-        <span class="event-kicker">First public video</span>
+        <span class="event-kicker">Zürich Film Festival · ZFF72</span>
         <h3 class="event-title">"Summer Love"</h3>
-        <p class="event-where">Zürich Film Festival · ZFF 2018</p>
+        <p class="event-where">Zürich</p>
         <p class="event-desc">
-          The first frame I let out into the world. The moment the
-          creative side of me stopped being a secret.
+          This was the first short I ever wrote and directed, and I learned a lot during this tumultuous production. An idea alone isn't enough; how to translate it to reality is where it gets interesting and is also where I, as they so eloquently say in German, "auf die Welt gekommen".
         </p>
-        <ul class="event-tags">
-          <li>Writing</li><li>Directing</li><li>Filmmaking</li>
-        </ul>
+        <p class="event-desc">
+          You can watch my debut <a href="https://youtu.be/H4BgMEYGUwc" target="_blank" rel="noopener">here</a>.
+        </p>
+        <ul class="event-tags"><li>Writing</li><li>Directing</li><li>Filmmaking</li></ul>
       </div>
     </article>
 
-    <!-- Feb 2016 · Leadership programme · HSO -->
-    <article class="event event-major event-left" data-parallax="0.07" data-skills="">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2018</span></div>
+
+    <article class="event event-major event-left" data-skills="hiking" data-teen-floor="true">
       <div class="event-mark"></div>
-      <div class="event-year">Feb 2016</div>
+      <div class="event-year">February</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-hat-alt" aria-hidden="true"></i></span>
         <span class="event-kicker">Leadership Programme</span>
         <h3 class="event-title">HSO Wirtschaftsschule Schweiz</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Completed HSO's <em>Lehrgang Leadership</em>. Five years into
-          running teams at Amazee Labs, it was time to turn hard-won
-          instinct into vocabulary I could actually hand down:
-          frameworks, language, and the habits of coaching.
+          Completed HSO's <em>Lehrgang Leadership</em>. Five years into running teams at Amazee Labs, it was time to turn hard-won instinct into vocabulary I could actually hand down: frameworks, language, and the habits of coaching.
         </p>
-        <ul class="event-tags">
-          <li>Leadership</li><li>Management</li>
-        </ul>
+        <ul class="event-tags"><li>Leadership</li><li>Management</li></ul>
       </div>
     </article>
 
-    <!-- 2011 · Team Lead · Amazee Labs AG -->
-    <article class="event event-major event-left" data-parallax="0.09" data-skills="scrum team-lead hiring delivery">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2016</span></div>
+
+    <article class="event event-major event-left" data-skills="scrum team-lead hiring delivery">
       <div class="event-mark"></div>
-      <div class="event-year">Aug 2011</div>
+      <div class="event-year">August</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-users-alt-3" aria-hidden="true"></i></span>
         <span class="event-kicker">Team Lead · Product Owner · PM</span>
         <h3 class="event-title">Amazee Labs AG</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Led thirteen developers and three product owners. Introduced
-          SCRUM to the team, rebuilt the hiring loop, and shepherded
-          client projects worth up to CHF 700k each.
+          Led thirteen developers and three product owners in my role as team lead. Before that, I led multiple software projects across different teams simultaneously.
         </p>
-        <ul class="event-tags">
-          <li>SCRUM</li><li>Software Development</li>
-        </ul>
+        <p class="event-desc">
+          This was an incredible time in which I learned a lot, especially on how to deal with high-pressure situations and ever-demanding client requests.
+        </p>
+        <ul class="event-tags"><li>Agile</li><li>SCRUM</li><li>Software Development</li></ul>
       </div>
     </article>
 
-    <!-- 2010 · Software Developer · Amazee Labs AG -->
-    <article class="event event-major event-left" data-parallax="0.05" data-skills="drupal electric-guitar">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2011</span></div>
+
+    <article class="event event-major event-left" data-skills="drupal electric-guitar">
       <div class="event-mark"></div>
-      <div class="event-year">2010</div>
+      <div class="event-year">August</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-code" aria-hidden="true"></i></span>
         <span class="event-kicker">Software Developer</span>
         <h3 class="event-title">Amazee Labs AG</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Joined Amazee on the dev side: Drupal, Typo3, the occasional
-          custom CMS. Took on a four-person sitebuilding team and wrote
-          the onboarding playbook that stuck around after I left.
+          Joined Amazee on the dev side: Drupal, PHP, HTML/CSS, and JavaScript were my daily bread and butter.
         </p>
-        <ul class="event-tags">
-          <li>Drupal</li><li>Software Development</li>
-        </ul>
+        <ul class="event-tags"><li>Drupal</li><li>Software Development</li></ul>
       </div>
     </article>
 
-    <!-- 2009 · Full-Stack Developer / Web Designer · Eins1 -->
-    <article class="event event-major event-left" data-parallax="0.05" data-skills="">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2010</span></div>
+
+    <article class="event event-major event-left" data-skills="">
       <div class="event-mark"></div>
-      <div class="event-year">2009</div>
+      <div class="event-year">February</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-code" aria-hidden="true"></i></span>
         <span class="event-kicker">Full-Stack Developer / Web Designer</span>
-        <h3 class="event-title">Eins1</h3>
+        <h3 class="event-title">Eins1 AG</h3>
         <p class="event-where">Winterthur</p>
         <p class="event-desc">
-          My first proper role out of apprenticeship. Junior on all
-          fronts: development in the morning, visual design in the
-          afternoon. Typolight, CSS, and a lot of learning on the job.
+          My first proper role out of apprenticeship. Junior on all fronts: development in the morning, visual design in the afternoon. Typolight, CSS, and a lot of learning on the job.
         </p>
-        <ul class="event-tags">
-          <li>Web Developer</li><li>Web Designer</li><li>Typolight</li>
-        </ul>
+        <ul class="event-tags"><li>Web Developer</li><li>Web Designer</li><li>Typolight</li></ul>
       </div>
     </article>
 
-    <!-- Aug 2008 · Junior Web Developer · eye media -->
-    <article class="event event-major event-left" data-parallax="0.08" data-skills="php js css typo3 skateboarding">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2009</span></div>
+
+    <article class="event event-major event-left" data-skills="php js css typo3 skateboarding">
       <div class="event-mark"></div>
-      <div class="event-year">Aug 2008</div>
+      <div class="event-year">August</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-code" aria-hidden="true"></i></span>
         <span class="event-kicker">Junior Web Developer</span>
-        <h3 class="event-title">eye media</h3>
+        <h3 class="event-title">eye media GmbH</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
-          Another junior role in the same early-career era. Pure code
-          this time, no design. Just shipping the first lines of
-          production code with my name on them.
+          Another junior role in the same early-career era. Pure code this time, no design. Just shipping the first lines of production code with my name on them.
         </p>
-        <ul class="event-tags">
-          <li>Web Developer</li>
-        </ul>
+        <ul class="event-tags"><li>Web Developer</li></ul>
       </div>
     </article>
 
-    <!-- 2008 · EFZ Diploma · Minerva Schulen
-         data-school-gate marks the baby → teen transition: this is where
-         the baby hobbies retire and the "school-age" hobbies (video games,
-         movies) come online. -->
-    <article class="event event-major event-left" data-parallax="0.05" data-skills="software-eng video-games movies" data-school-gate="true">
+    <article class="event event-major event-left" data-skills="software-eng video-games movies" data-school-gate="true">
       <div class="event-mark"></div>
-      <div class="event-year">Aug 2008</div>
+      <div class="event-year">August</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-graduate" aria-hidden="true"></i></span>
         <span class="event-kicker">EFZ Applikationsentwickler</span>
         <h3 class="event-title">Minerva IT College</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
-          The classic Swiss IT apprenticeship: four years across
-          application engineering, hardware, networking, system and
-          service management, and web engineering. A deliberately broad
-          foundation. <em>The license to build just about anything.</em>
+          The classic Swiss IT apprenticeship: four years across application engineering, hardware, networking, system and service management, and web engineering. A deliberately broad foundation. <em>The license to build just about anything.</em>
         </p>
-        <ul class="event-tags">
-          <li>Apprenticeship</li><li>Software Engineering</li><li>Foundation</li>
-        </ul>
+        <ul class="event-tags"><li>Apprenticeship</li><li>Software Engineering</li><li>Foundation</li></ul>
       </div>
     </article>
 
-    <!-- 1986 · Born — fly anchor for the baby-era hobbies. The baby
-         hobby ids aren't listed in data-skills: they're driven by the
-         separate updateBabyHobbies mechanism (gated on the school
-         boundary, not this event's position). -->
-    <article class="event event-major event-right" data-parallax="0.06" data-skills="" data-baby-source="true">
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">2008</span></div>
+
+    <article class="event event-major event-right" data-skills="" data-baby-source="true">
       <div class="event-mark"></div>
-      <div class="event-year">1986</div>
+      <div class="event-year">Spring</div>
       <div class="event-card">
         <span class="event-icon" aria-hidden="true"><i class="icofont-baby-food" aria-hidden="true"></i></span>
-        <span class="event-kicker">Unscheduled arrival</span>
+        <span class="event-kicker">My first deployment.</span>
         <h3 class="event-title">Born</h3>
         <p class="event-where">Zürich</p>
         <p class="event-desc">
-          The day I first showed up, armed with nothing but a working
-          pair of lungs and strong opinions about my immediate
-          environment. Stayed on in Zürich because why leave when the
-          paperwork's already done?
+          The day I spawned upon this earth, determined to figure out what to do before immediately getting distracted by the beauty of Zürich in the spring.
         </p>
-        <ul class="event-tags">
-          <li>Swiss</li><li>Stubborn since day one</li>
-        </ul>
+        <ul class="event-tags"><li>Swiss</li><li>Stubborn since day one</li></ul>
       </div>
     </article>
 
-    <!-- Bottom-of-timeline anchor — plain black dot, mirrors the "Today"
-         dot at the top. Marks the very start of the line (birth). -->
+    <div class="year-divider" aria-hidden="true"><span class="year-divider-label">1986</span></div>
+
     <div class="timeline-start" aria-hidden="true">
       <span class="timeline-today-dot"></span>
     </div>
 
-  </main>
+    </main>
 
   <!-- =================== CHARACTER (fixed at viewport centre) ===================
        A walking Victor with a backpack. Age morphs at the 2018 Summer-Love
@@ -572,6 +456,14 @@
       <video class="char-art char-adult" autoplay loop muted playsinline preload="auto" disablepictureinpicture>
         <source src="assets/adult.webm" type="video/webm"/>
         <source src="assets/adult.mov"  type="video/quicktime"/>
+      </video>
+      <!-- Waving variant — replaces the walking adult in the hero stage
+           (while the character is enlarged at the top of the page) and
+           swaps back to walking as soon as the character starts walking
+           the timeline. Same box, same filter chain, same drop shadow. -->
+      <video class="char-art char-waving" autoplay loop muted playsinline preload="auto" disablepictureinpicture>
+        <source src="assets/waving.webm" type="video/webm"/>
+        <source src="assets/waving.mov"  type="video/quicktime"/>
       </video>
       <video class="char-art char-teen" autoplay loop muted playsinline preload="auto" disablepictureinpicture>
         <source src="assets/teen.webm"  type="video/webm"/>
@@ -588,7 +480,11 @@
       <!-- Ping ring that flashes when a skill lands -->
       <div class="char-ping"     aria-hidden="true"></div>
       <!-- Pulsing moss dot next to the backpack — interaction hint -->
-      <span class="char-hint" aria-hidden="true"><span class="char-hint-pulse"></span></span>
+      <span class="char-hint char-hint-skills" aria-hidden="true"><span class="char-hint-pulse"></span></span>
+      <!-- Two more pulsing dots on the head: creative (upper-left) and
+           technical (upper-right). Hovering opens the matching bio card. -->
+      <span class="char-hint char-hint-creative" tabindex="0" aria-label="Open Victor's creative summary"><span class="char-hint-pulse"></span></span>
+      <span class="char-hint char-hint-technical" tabindex="0" aria-label="Open Victor's technical summary"><span class="char-hint-pulse"></span></span>
     </div>
 
     <!-- Speech bubble CTA — pure-CSS bubble with a tail pointing down at
@@ -609,39 +505,111 @@
         <span class="char-skills-count" id="char-count">0</span>
       </header>
       <nav class="char-skills-tabs" role="tablist">
-        <button type="button" data-cat="tech"   class="is-active" role="tab">Tech</button>
+        <button type="button" data-cat="craft"  class="is-active" role="tab">Craft</button>
+        <button type="button" data-cat="tech"                 role="tab">Tech</button>
         <button type="button" data-cat="people"               role="tab">People</button>
-        <button type="button" data-cat="craft"                role="tab">Craft</button>
         <button type="button" data-cat="hobby"                role="tab">Hobby</button>
       </nav>
-      <div class="char-skills-grid" id="char-skills-grid" data-active-cat="tech"></div>
+      <!-- The grid's initial active category matches the first tab. -->
+      <!-- (data-active-cat is also driven from JS on tab switch.) -->
+      <div class="char-skills-grid" id="char-skills-grid" data-active-cat="craft"></div>
     </div>
+
+    <!-- Creative bio card — opens when the upper-left head dot is
+         hovered. Same paper + shadow styling as the backpack panel. -->
+    <aside class="char-bio char-bio-creative" aria-hidden="true">
+      <h3 class="char-bio-title">Creative</h3>
+      <p>
+        I love creating things, especially when I get to share them.
+        For me, video production is the ultimate medium for this.
+        Materializing my creativity and collaborating with others to
+        build great things is the true highlight of my career.
+      </p>
+      <p>
+        Have a scroll down memory lane to find some of my work!
+      </p>
+    </aside>
+
+    <!-- Technical bio card — opens when the upper-right head dot is
+         hovered. -->
+    <aside class="char-bio char-bio-technical" aria-hidden="true">
+      <h3 class="char-bio-title">Technical</h3>
+      <p>
+        Decades of problem-solving in IT have given me a unique,
+        structured foundation that actually shines brightest in
+        creative environments. My background also serves as a strong
+        pillar to navigate through modern AI workflows, to incorporate
+        the ones that actually make a difference.
+      </p>
+    </aside>
   </div>
 
-  <!-- Intro speech bubble — fixed above the (enlarged) character while
-       the user is at the top of the page. Fades out as the character
-       scales down to its timeline size. Styled like the backpack panel
-       (paper + soft shadow + rounded corners, no coloured border). -->
-  <div class="char-intro-bubble" id="char-intro-bubble">
-    <p class="char-intro-heading">Hi! I'm <em>Victor</em>.</p>
-    <p>
-      I'm a <em>producer</em>, <em>creator</em>, and <em>builder</em>
-      from <em>Zürich, Switzerland</em>.
-    </p>
-    <p>
-      Take a scroll through my memory lane to check out my work, or
-      <a class="char-intro-cta" href="mailto:victor.kuenzig@gmail.com">hit me up</a>
-      directly, or connect on
-      <a class="char-intro-cta" href="https://www.linkedin.com/in/victor-kunzig/" target="_blank" rel="noopener">LinkedIn</a>!
-    </p>
+  <!-- Hero greeting — fixed above the enlarged character during the
+       intro. Just very large type, horizontally centered. Uses the
+       same id as the previous intro bubble so the .is-intro-held /
+       --intro-opacity wiring continues to work without changes. -->
+  <h1 class="char-intro-bubble hero-greeting" id="char-intro-bubble">
+    Hi! I'm <em>Victor</em>.
+  </h1>
+
+  <!-- Handwritten hint pointing at the backpack's green dot. Fixed
+       to the viewport; positioning is calibrated so the arrow's tip
+       lands on the char-hint dot while the character is at hero scale.
+       Fades via --intro-opacity, so it only shows in the hero stage. -->
+  <div class="hero-skills-hint hint-arrow" aria-hidden="true">
+    <!-- Quadratic Bezier: M start Q control end. The arrowhead is a
+         <marker> in the sprite SVG above, auto-oriented to the tangent
+         at the end point. Only 3 coordinates to reason about. -->
+    <svg class="hint-arrow-svg" width="120" height="100" viewBox="0 0 120 100"
+         fill="none" stroke="currentColor" stroke-width="2.4"
+         stroke-linecap="round" stroke-linejoin="round">
+      <!-- Start unchanged at (118, 67); tip dropped 10 px to (35, 90).
+           Control moved to (48, 84) so the end tangent stays (-13, 6)
+           ≈ 155°, preserving the arrowhead orientation. The curve now
+           has a deeper belly (midpoint drops from ~72 to ~81 in y). -->
+      <path d="M 118 67 Q 48 84, 35 90" marker-end="url(#hint-arrow-tip)"/>
+    </svg>
+    <span class="hint-arrow-label">check out my skills!</span>
+  </div>
+
+  <!-- Handwritten hint pointing at the CREATIVE head dot. Mirrors the
+       skills hint: label sits on the LEFT of the character, arrow
+       curves DOWN-RIGHT to the dot. -->
+  <div class="hero-creative-hint hint-arrow" aria-hidden="true">
+    <svg class="hint-arrow-svg" width="120" height="100" viewBox="0 0 120 100"
+         fill="none" stroke="currentColor" stroke-width="2.4"
+         stroke-linecap="round" stroke-linejoin="round">
+      <!-- Mirror of the skills path: start at left (2, 67), tip at
+           right (85, 90), control at (72, 84) → end tangent (13, 6)
+           ≈ 25° (pointing down-right). -->
+      <path d="M 2 67 Q 72 84, 85 90" marker-end="url(#hint-arrow-tip)"/>
+    </svg>
+    <span class="hint-arrow-label">my creative chomps</span>
+  </div>
+
+  <!-- Handwritten hint pointing at the TECHNICAL head dot. Label is
+       above the character, arrow curves down to the right-head dot. -->
+  <div class="hero-technical-hint hint-arrow" aria-hidden="true">
+    <svg class="hint-arrow-svg" width="120" height="100" viewBox="0 0 120 100"
+         fill="none" stroke="currentColor" stroke-width="2.4"
+         stroke-linecap="round" stroke-linejoin="round">
+      <!-- Same down-left shape as the skills hint but shorter, because
+           the technical dot sits very close to the character's head. -->
+      <path d="M 118 67 Q 48 84, 35 90" marker-end="url(#hint-arrow-tip)"/>
+    </svg>
+    <span class="hint-arrow-label">my technical prowess</span>
   </div>
 
   <!-- =================== FOOTER =================== -->
   <footer class="outro">
-    <p class="outro-copy">Designed and Created by <em>Victor &amp; Claude</em></p>
-    <p class="outro-copy">© <span id="year">2026</span></p>
+    <div class="outro-card">
+      <span class="outro-small">created by</span>
+      <span class="outro-names">Victor</span>
+      <span class="outro-rule" aria-hidden="true"></span>
+      <span class="outro-year">© <span id="year">2026</span></span>
+    </div>
   </footer>
 
-  <script src="main.js"></script>
+  <script src="main.js?v=20260423ag"></script>
 </body>
 </html>
