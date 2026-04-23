@@ -472,24 +472,25 @@
   =============================================================== -->
   <div class="character" id="character" tabindex="0" aria-label="Victor, walking the timeline. Hover to see the skills collected so far">
     <div class="char-art-wrap">
-      <!-- Walking videos. WebM for Chrome/Firefox; MOV (HEVC) for Safari.
-           mix-blend-mode: multiply on the video layer makes the white
-           background drop out into the cream paper beneath. -->
+      <!-- Walking videos. HEVC-with-alpha MOV listed first so Safari picks
+           it (Safari plays VP9 WebM but ignores its alpha aux layer, which
+           made the character render on a black background); Chrome/Firefox
+           can't decode HEVC-with-alpha and falls through to the WebM. -->
       <video class="char-art char-adult" autoplay loop muted playsinline preload="auto" disablepictureinpicture>
+        <source src="assets/adult.mov"  type='video/mp4; codecs="hvc1"'/>
         <source src="assets/adult.webm" type="video/webm"/>
-        <source src="assets/adult.mov"  type="video/quicktime"/>
       </video>
       <!-- Waving variant — replaces the walking adult in the hero stage
            (while the character is enlarged at the top of the page) and
            swaps back to walking as soon as the character starts walking
            the timeline. Same box, same filter chain, same drop shadow. -->
       <video class="char-art char-waving" autoplay loop muted playsinline preload="auto" disablepictureinpicture>
+        <source src="assets/waving.mov"  type='video/mp4; codecs="hvc1"'/>
         <source src="assets/waving.webm" type="video/webm"/>
-        <source src="assets/waving.mov"  type="video/quicktime"/>
       </video>
       <video class="char-art char-teen" autoplay loop muted playsinline preload="auto" disablepictureinpicture>
+        <source src="assets/teen.mov"   type='video/mp4; codecs="hvc1"'/>
         <source src="assets/teen.webm"  type="video/webm"/>
-        <source src="assets/teen.mov"   type="video/quicktime"/>
       </video>
       <!-- Baby variant — static SVG illustration shown at the very bottom
            of the timeline (below the 2008 EFZ diploma gate). Treated like
