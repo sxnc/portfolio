@@ -1,6 +1,6 @@
 # portfolio
 
-Victor Künzig's one-page portfolio. An online companion to the CV.
+Victor's one-page portfolio. An online companion to the CV.
 
 Pure static site: HTML + CSS + vanilla JS, IcoFont via CDN, three short looping videos (walking adult, walking teen, waving adult), and a single SVG for the baby variant. No build step, no framework, no trackers. Hosted on GitHub Pages. Noindex across the board (meta tags + `robots.txt`) — the site is meant to be linked from job applications, not crawled.
 
