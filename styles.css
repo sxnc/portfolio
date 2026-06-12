@@ -846,6 +846,53 @@ body:not(.hero-revealed) .char-hint-skills {
   background: var(--moss);
 }
 
+/* ============ CURRENT POSITION — CENTERED EVENT ============
+   The currently-active role doesn't branch left or right: it sits
+   astride the spine, dead centre, directly under the "Today" dot.
+   Desktop-only — below 900px the single-column stack already renders
+   every card the same way, so .event-center needs no mobile rules.
+
+   With no .event-left/.event-right class the JS spine builder reads
+   the event's side as 0, so the spine stays straight while this card
+   is near viewport centre — the line of time runs from the today-dot
+   straight down behind the card and out the bottom. */
+@media (min-width: 901px) {
+  /* The spine SVG paints at z-index 1 and .event is a transformed
+     (z 0) stacking context, so the line would cut across the card.
+     Positioning the event at z 2 lifts card + year label above it. */
+  .event-center {
+    position: relative;
+    z-index: 2;
+  }
+  /* No dot of its own — the "Today" dot above is this card's marker.
+     visibility (not display) keeps the mark's geometry measurable so
+     the spine's direction sampling still sees a side-0 contribution
+     at the card's real position. */
+  .event-center .event-mark { visibility: hidden; }
+  .event-center .event-year {
+    grid-column: 1 / 4;
+    grid-row: 1;
+    justify-self: center;
+    padding: 0 14px;
+    /* Cream plate breaks the spine behind the label, same trick as
+       .year-divider-label. */
+    background: var(--cream);
+  }
+  .event-center .event-card {
+    grid-column: 1 / 4;
+    grid-row: 2;
+    justify-self: center;
+    width: min(560px, 100%);
+    margin: 0;
+    text-align: center;
+  }
+  .event-center .event-icon  { margin-left: auto; margin-right: auto; }
+  .event-center .event-desc  { margin-left: auto; margin-right: auto; }
+  .event-center .event-stats { justify-content: center; margin-left: auto; margin-right: auto; }
+  .event-center .event-stat  { align-items: center; }
+  .event-center .event-tags  { justify-content: center; }
+}
+
 /* ============ MOBILE / NARROW DESKTOP TIMELINE ============
    Below 900px the 100px branch offset squeezes video cards too tightly,
    so we collapse the whole timeline to a left-anchored single column.
@@ -1004,6 +1051,17 @@ body:not(.hero-revealed) .char-hint-skills {
 .character.is-visible {
   opacity: 1;
   pointer-events: auto;
+}
+/* While the centred current-role card (.event-center) overlaps the
+   character's box, the figure fades out and back in on the far side —
+   the card is opaque, so this reads as the character walking behind
+   the "current position" sign rather than over its text. The class is
+   driven per scroll frame by updateCharacter() in main.js; desktop
+   only (on mobile the bottom-anchored character never crosses cards
+   any differently for this event than for the others). */
+.character.is-visible.is-behind-card {
+  opacity: 0;
+  pointer-events: none;
 }
 /* When the backpack opens, the character's stacking context jumps
    above the intro bubble (z-index 72) so the panel isn't occluded. */

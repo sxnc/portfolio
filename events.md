@@ -1,5 +1,28 @@
 # Event Cards — Source of Truth
 
+## Event — ID: bagels-2026
+
+- **Month:** Since June
+- **Kicker:** Producer · Social-First Content
+- **Title:** Bagels of Berkley
+- **Where:** Publicis Groupe Switzerland · Zürich
+- **Icon:** icofont-donut
+- **Stats:** (none)
+- **Tags:** Producing, Social Media, Always-On Content
+- **Layout:** centred on the spine (`event-center`) — currently active position
+
+**Description:**
+
+Producing social-first videos and photos — from ideation all the way through post-production. I translate brand strategies into social campaigns and always-on content, working shoulder to shoulder with the design, strategy, and paid media teams.
+
+Fresh role, fresh content. The bagels, sadly, are purely metaphorical.
+
+---
+
+### Year-divider: 2026
+
+---
+
 ## Event — ID: everywow-2025
 
 - **Month:** May

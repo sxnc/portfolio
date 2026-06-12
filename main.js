@@ -81,6 +81,7 @@
   const skillsCount = document.getElementById('char-count');
   const tabs        = Array.from(document.querySelectorAll('.char-skills-tabs button'));
 
+  const centerCardEl = document.querySelector('.event-center .event-card');       // current-role card — character passes behind it (desktop)
   const branchBottomEl = document.querySelector('[data-branch-anchor="bottom"]'); // 2018 Summer Love — teen ↔ adult threshold (upper neighbour)
   const teenFloorEl    = document.querySelector('[data-teen-floor]');             // 2016 HSO       — teen ↔ adult threshold (lower neighbour)
   const schoolGateEl   = document.querySelector('[data-school-gate]');            // 2008 Minerva — school gate (baby hobbies boundary)
@@ -136,7 +137,9 @@
     'kpi':              { name: 'KPI Management',   cat: 'people', icon: 'chart-bar-graph' },
     // ── CRAFT ─────────────────────────────────────────────────
     'video-prod':       { name: 'Video Production', cat: 'craft',  icon: 'video-alt' },
+    'social-media':     { name: 'Social Media',     cat: 'craft',  icon: 'instagram' },
     'content-strategy': { name: 'Content Strategy', cat: 'craft',  icon: 'light-bulb' },
+    'brand-campaigns':  { name: 'Brand Campaigns',  cat: 'craft',  icon: 'megaphone' },
     'storytelling':     { name: 'Storytelling',     cat: 'craft',  icon: 'book-alt' },
     'post-prod':        { name: 'Post-Production',  cat: 'craft',  icon: 'film' },
     'video-edit':       { name: 'Video Editing',    cat: 'craft',  icon: 'movie' },
@@ -887,6 +890,20 @@
     const anchorOffset = Math.min(0, rect.bottom - feetDefault);
     character.style.setProperty('--char-anchor-offset', anchorOffset.toFixed(2) + 'px');
     character.classList.toggle('is-visible', inside);
+
+    // The centred current-role card sits astride the spine exactly
+    // where the character walks, so fade the figure out while their
+    // boxes overlap vertically — it reads as the character passing
+    // behind the card. Desktop only: on mobile the bottom-anchored
+    // character relates to this card like to any other.
+    if (centerCardEl && !isMobile) {
+      const cardR = centerCardEl.getBoundingClientRect();
+      const charR = character.getBoundingClientRect();
+      const PASS_PAD = 12;   // require real overlap before hiding
+      const behind = cardR.top < charR.bottom - PASS_PAD &&
+                     cardR.bottom > charR.top + PASS_PAD;
+      character.classList.toggle('is-behind-card', behind);
+    }
 
     const wasBaby  = character.classList.contains('is-baby');
     const wasYoung = character.classList.contains('is-young');
