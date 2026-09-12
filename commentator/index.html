@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>commentator</title>
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <link rel="icon" type="image/png" href="../icon.png" />
+  <style>
+    :root { --cream:#f3ede0; --paper:#faf6ec; --ink:#161615; --ink-body:#3a3833; --ink-muted:#8a8277; --moss:#3a6b4a; --line:rgba(22,22,21,.14); }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { background:var(--cream); color:var(--ink-body); font:17px/1.6 -apple-system, BlinkMacSystemFont, "Inter", "Helvetica Neue", sans-serif; min-height:100vh; }
+    main { max-width:44rem; margin:0 auto; padding:clamp(32px,8vh,96px) clamp(20px,4vw,40px); }
+    h1 { font-family:"Fraunces","Times New Roman",serif; font-weight:500; font-size:2.2rem; color:var(--ink); line-height:1.15; margin-bottom:.5rem; }
+    h2 { font-size:1.05rem; color:var(--ink); margin:2rem 0 .5rem; }
+    p, li { margin-bottom:1rem; }
+    ul { padding-left:1.2rem; }
+    .kicker { color:var(--ink-muted); font-size:.85rem; letter-spacing:.08em; text-transform:uppercase; margin-bottom:1.5rem; }
+    a { color:var(--moss); }
+    nav { border-top:1px solid var(--line); margin-top:3rem; padding-top:1rem; font-size:.9rem; color:var(--ink-muted); }
+    nav a { margin-right:1.2rem; }
+  </style>
+</head>
+<body>
+<main>
+  <p class="kicker">commentator</p>
+  <h1>A private inbox for one YouTube channel’s comments.</h1>
+  <p><strong>commentator</strong> is a self-hosted, single-user tool. It shows the comments on the owner’s own YouTube videos in an inbox-style list, lets the owner archive them locally, suggests replies drawn from the owner’s own past replies, and sends replies the owner writes. It runs on the owner’s private server and is used by the owner alone.</p>
+  <h2>What it does</h2>
+  <ul>
+    <li>Reads comment threads on the owner’s videos through the YouTube Data API, on demand.</li>
+    <li>Keeps a local copy so comments can be sorted, archived and searched without asking YouTube again.</li>
+    <li>Posts replies to those comments when — and only when — the owner presses Send.</li>
+  </ul>
+  <h2>What it does not do</h2>
+  <ul>
+    <li>It is not offered to anyone else. There is no sign-up and no public instance.</li>
+    <li>It never modifies, hides or deletes comments on YouTube, and never acts on the owner’s behalf without a click.</li>
+    <li>It does not share any data with third parties. See the <a href="privacy.html">privacy policy</a> and <a href="terms.html">terms of service</a>.</li>
+  </ul>
+<nav><a href="./">Home</a><a href="privacy.html">Privacy policy</a><a href="terms.html">Terms of service</a></nav>
+</main>
+</body>
+</html>
