@@ -1,5 +1,22 @@
 # This site is a personal CV linked only from job applications.
 # Please don't index it, archive it, or use it as training data.
+#
+# Counterintuitive but deliberate: Google's and Bing's SEARCH
+# crawlers are ALLOWED in. If robots.txt blocks them they can never
+# fetch the pages, never see the noindex meta tags, and a
+# blocked-but-linked URL can still end up in results ("Indexed,
+# though blocked by robots.txt"). Letting them crawl is the only
+# way the noindex actually takes effect — do not re-block them.
+# Training crawlers (incl. Google-Extended) ignore noindex, so for
+# those robots.txt below remains the right lever.
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: bingbot
+Allow: /
+
+# Everyone else: stay out.
 
 User-agent: *
 Disallow: /

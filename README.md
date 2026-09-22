@@ -41,7 +41,7 @@ The mobile layout is a separate pass consolidated at the end of `styles.css` wit
 ## Privacy / indexing
 
 - `<meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />` plus explicit per-bot tags (`googlebot`, `bingbot`, `GPTBot`, `ChatGPT-User`, `Google-Extended`, `CCBot`, `anthropic-ai`, `Claude-Web`, `ClaudeBot`, `PerplexityBot`, `Applebot-Extended`) in the `<head>`.
-- `robots.txt` at the repo root with `Disallow: /` for `*` plus explicit entries for every AI / training crawler with a published user-agent string.
+- `robots.txt` at the repo root with `Disallow: /` for `*` plus explicit entries for every AI / training crawler with a published user-agent string — **except** `Googlebot` and `bingbot`, which are deliberately allowed to crawl: a crawler that's blocked by robots.txt can never see the noindex meta tags, and Google will happily list a blocked-but-linked URL anyway ("Indexed, though blocked by robots.txt"). Letting the search crawlers in is what makes the noindex stick. Don't re-block them.
 
 Both mechanisms are opt-in conventions — they block honest crawlers but can't stop a scraper that chooses to ignore them. For a public GitHub Pages repo this is the ceiling of what's achievable without moving off that host.
 

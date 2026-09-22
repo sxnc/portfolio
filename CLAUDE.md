@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Victor Künzig's one-page portfolio — an interactive scroll-through-time CV. Pure static site (`index.html` + `styles.css` + `main.js`), no build step, no framework, no dependencies beyond IcoFont via CDN. Hosted on GitHub Pages (CNAME → custom domain); every push to `main` deploys automatically within a minute or two. The site is deliberately noindexed (meta tags + robots.txt) — keep it that way when touching `<head>`.
+Victor Künzig's one-page portfolio — an interactive scroll-through-time CV. Pure static site (`index.html` + `styles.css` + `main.js`), no build step, no framework, no dependencies beyond IcoFont via CDN. Hosted on GitHub Pages (CNAME → custom domain); every push to `main` deploys automatically within a minute or two. The site is deliberately noindexed (meta tags + robots.txt) — keep it that way when touching `<head>`. Note: robots.txt intentionally **allows** `Googlebot`/`bingbot` — blocked crawlers can't see the noindex tags and Google indexes blocked-but-linked URLs anyway; the meta tags do the real work for search engines, robots.txt handles AI/training crawlers. Never re-add a crawl block for the search bots.
 
 ## Commands
 
